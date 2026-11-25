@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sorteo de Navidad 🎄 Amigo Invisible Familiar</title>
+  <meta name="description" content="Sorteo navideño de amigo invisible sin cruce de parejas ni auto-regalos.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
+</head>
+<body>
+
+  <!-- Canvas para copos de nieve animados -->
+  <canvas id="snowCanvas"></canvas>
+
+  <!-- Guirnalda de luces navideñas parpadeantes -->
+  <div class="fairy-lights" aria-hidden="true">
+    <span class="light red"></span>
+    <span class="light gold"></span>
+    <span class="light green"></span>
+    <span class="light blue"></span>
+    <span class="light red"></span>
+    <span class="light gold"></span>
+    <span class="light green"></span>
+    <span class="light red"></span>
+    <span class="light blue"></span>
+    <span class="light gold"></span>
+    <span class="light green"></span>
+    <span class="light red"></span>
+  </div>
+
+  <div class="app-container">
+
+    <!-- ==================== PANTALLA 1: PIN DE ACCESO ==================== -->
+    <section id="screenPin" class="screen active">
+      <div class="christmas-card pin-card glass-panel">
+        <div class="festive-badge">✨ Navidad 2026 ✨</div>
+        <div class="hero-icon">🎁</div>
+        <h1 class="main-title">Sorteo de Navidad</h1>
+        <p class="subtitle">Amigo Invisible de la Familia</p>
+
+        <p class="pin-instruction">Ingresá el PIN navideño para descubrir a quién te toca regalarle:</p>
+
+        <div class="pin-display-wrapper">
+          <div class="pin-dots" id="pinDots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" autofocus aria-label="Ingresá el PIN de 4 dígitos">
+        </div>
+
+        <div id="pinErrorMsg" class="error-msg" style="display: none;">
+          🎅 PIN incorrecto. Intentá nuevamente.
+        </div>
+
+        <!-- Teclado en pantalla táctil -->
+        <div class="numpad">
+          <button type="button" class="num-btn" data-val="1">1</button>
+          <button type="button" class="num-btn" data-val="2">2</button>
+          <button type="button" class="num-btn" data-val="3">3</button>
+          <button type="button" class="num-btn" data-val="4">4</button>
+          <button type="button" class="num-btn" data-val="5">5</button>
+          <button type="button" class="num-btn" data-val="6">6</button>
+          <button type="button" class="num-btn" data-val="7">7</button>
+          <button type="button" class="num-btn" data-val="8">8</button>
+          <button type="button" class="num-btn" data-val="9">9</button>
+          <button type="button" class="num-btn num-action" id="btnClearPin" title="Borrar">⌫</button>
+          <button type="button" class="num-btn" data-val="0">0</button>
+          <button type="button" class="num-btn num-action enter-btn" id="btnSubmitPin" title="Entrar">✓</button>
+        </div>
+
+        <div class="pin-hint">
+          <span>Pista: Fecha de Navidad (2512)</span>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== PANTALLA 2: SELECCIÓN DE NOMBRE ==================== -->
+    <section id="screenNames" class="screen">
+      <div class="screen-header">
+        <div class="festive-mini-badge">🎄 ¿Quién está frente a la pantalla?</div>
+        <h2 class="section-title">Elegí tu nombre</h2>
+        <p class="privacy-notice">
+          🤫 <strong>Regla de oro:</strong> Tocá únicamente tu nombre. Asegurate de que nadie espíe tu pantalla para no arruinar la sorpresa.
+        </p>
+      </div>
+
+      <div class="participants-grid" id="participantsGrid">
+        <!-- Generado dinámicamente desde JS -->
+      </div>
+
+      <div class="screen-footer">
+        <button type="button" class="btn-text" id="btnLockApp">🔒 Bloquear / Salir</button>
+        <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdmin">⚙️ Administrador</button>
+      </div>
+    </section>
+
+
+    <!-- ==================== PANTALLA 3: REVELACIÓN DEL REGALO ==================== -->
+    <section id="screenReveal" class="screen">
+      <div class="reveal-card glass-panel">
+        
+        <div class="reveal-header">
+          <span class="user-greeting">Hola, <strong id="revealUserName">Martín</strong> 🎅</span>
+          <p class="reveal-subtext">Tu amigo invisible ya fue asignado bajo secreto navideño.</p>
+        </div>
+
+        <!-- Estado 1: Caja de regalo cerrada para abrir -->
+        <div id="giftBoxState" class="gift-interactive-container">
+          <div class="gift-box" id="clickableGiftBox" role="button" tabindex="0" aria-label="Abrir regalo de Navidad">
+            <div class="gift-lid">
+              <div class="gift-bow"></div>
+            </div>
+            <div class="gift-ribbon-vertical"></div>
+            <div class="gift-ribbon-horizontal"></div>
+            <div class="gift-body"></div>
+          </div>
+          <button type="button" class="btn-festive-main" id="btnOpenGift">
+            🎁 ¡Tocá para abrir tu regalo!
+          </button>
+          <p class="gift-tap-hint">Tocá la caja o el botón para descubrirlo</p>
+        </div>
+
+        <!-- Estado 2: Regalo revelado con fanfarria -->
+        <div id="giftRevealedState" class="gift-revealed-content" style="display: none;">
+          <div class="sparkles-icon">✨ 🎁 ✨</div>
+          <span class="assigned-label">En esta Navidad te toca regalarle a:</span>
+          
+          <div class="assigned-name-box">
+            <h3 class="assigned-name" id="assignedPersonName">Valeria</h3>
+          </div>
+
+          <div class="secret-rule-box">
+            <span class="secret-icon">🤫</span>
+            <p><strong>¡Guardá el secreto!</strong> No le cuentes a nadie hasta el brindis de Nochebuena.</p>
+          </div>
+
+          <div class="reveal-actions">
+            <button type="button" class="btn-festive-secondary" id="btnHideSecret">
+              🔒 Ocultar y Salir
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+
+  <!-- ==================== MODAL: PANEL DE ADMINISTRADOR ==================== -->
+  <div class="modal-backdrop" id="adminModal" style="display: none;">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h3>⚙️ Panel del Organizador</h3>
+        <button type="button" class="modal-close" id="btnCloseAdmin">&times;</button>
+      </div>
+
+      <div class="modal-body" id="adminAuthBody">
+        <p>Ingresá el PIN maestro del organizador para consultar el sorteo completo o regenerarlo:</p>
+        <div class="admin-pin-group">
+          <input type="password" id="adminPinInput" maxlength="4" placeholder="PIN Maestro" inputmode="numeric">
+          <button type="button" class="btn-festive-small" id="btnVerifyAdmin">Acceder</button>
+        </div>
+        <div id="adminPinError" class="error-msg" style="display: none;">PIN maestro incorrecto (Pista: 9999 o 2512)</div>
+      </div>
+
+      <div class="modal-body" id="adminContentBody" style="display: none;">
+        <div class="admin-stat-banner">
+          <span>🎄 Sorteo Activo: <strong>Semilla #2512</strong></span>
+          <span class="badge-valid">✓ 100% Sin Parejas ni Auto-regalos</span>
+        </div>
+
+        <p class="admin-notice">Matriz completa de asignaciones (solo visible para el organizador):</p>
+
+        <div class="admin-pairs-list" id="adminPairsList">
+          <!-- Lista completa generada en JS -->
+        </div>
+
+        <div class="admin-actions">
+          <button type="button" class="btn-admin-action" id="btnShareWhatsApp">
+            📲 Copiar Enlaces de WhatsApp para la Familia
+          </button>
+          <button type="button" class="btn-admin-danger" id="btnReshuffle">
+            🎲 Sortear de Nuevo (Cambiar Asignaciones)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sonido navideño sintetizado por Web Audio API -->
+  <script src="js/app.js"></script>
+</body>
+</html>
