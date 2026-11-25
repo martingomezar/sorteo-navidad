@@ -1,30 +1,51 @@
-const { list, put } = require('@vercel/blob');
+const { list, put, del } = require('@vercel/blob');
 
-const CONFIG_KEY = 'config.json';
-
-function getSeenKey(seed) {
+function getSeenPrefix(seed) {
   const cleanSeed = String(seed || '2512').replace(/[^0-9]/g, '') || '2512';
-  return `seen-${cleanSeed}.json`;
+  return `state/seen-${cleanSeed}/`;
 }
 
-async function readJsonBlob(key, fallback) {
-  const { blobs } = await list({ prefix: key, limit: 5 });
-  const exact = blobs.find((b) => b.pathname === key);
-  if (!exact) return fallback;
+const CONFIG_PREFIX = 'state/config/';
 
-  const res = await fetch(`${exact.url}?t=${Date.now()}`, { cache: 'no-store' });
+async function readLatestJson(prefix, fallback) {
+  const { blobs } = await list({ prefix, limit: 100 });
+  if (!blobs || blobs.length === 0) return fallback;
+
+  // Ordenar por pathname descendente (contiene timestamp padded) para obtener siempre el más reciente
+  const sorted = [...blobs].sort((a, b) => b.pathname.localeCompare(a.pathname));
+  const latest = sorted[0];
+
+  const res = await fetch(latest.url, { cache: 'no-store' });
   if (!res.ok) return fallback;
   return await res.json();
 }
 
-async function writeJsonBlob(key, data) {
-  await put(key, JSON.stringify(data), {
+async function writeVersionedJson(prefix, data) {
+  const stamp = String(Date.now()).padStart(15, '0');
+  const rand = Math.random().toString(36).slice(2, 8);
+  const pathname = `${prefix}${stamp}-${rand}.json`;
+
+  const created = await put(pathname, JSON.stringify(data), {
     access: 'public',
     addRandomSuffix: false,
-    allowOverwrite: true,
     contentType: 'application/json',
     cacheControlMaxAge: 0
   });
+
+  // Limpiar versiones viejas para mantener el store liviano
+  try {
+    const { blobs } = await list({ prefix, limit: 100 });
+    const oldUrls = blobs
+      .filter((b) => b.pathname !== created.pathname)
+      .map((b) => b.url);
+    if (oldUrls.length > 0) {
+      await del(oldUrls);
+    }
+  } catch (_) {
+    // No bloquear si falla la limpieza
+  }
+
+  return data;
 }
 
 module.exports = async function handler(req, res) {
@@ -36,10 +57,10 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const config = await readJsonBlob(CONFIG_KEY, null);
+      const config = await readLatestJson(CONFIG_PREFIX, null);
       const effectiveSeed = (config && config.seed) ? config.seed : req.query.seed;
-      const seenKey = getSeenKey(effectiveSeed);
-      const seenRaw = await readJsonBlob(seenKey, []);
+      const seenPrefix = getSeenPrefix(effectiveSeed);
+      const seenRaw = await readLatestJson(seenPrefix, []);
       const seen = Array.isArray(seenRaw) ? seenRaw : [];
       return res.status(200).json({ seen, config });
     }
@@ -53,16 +74,16 @@ module.exports = async function handler(req, res) {
         if (!config || !Array.isArray(config.participants) || config.participants.length < 2) {
           return res.status(400).json({ error: 'Se necesitan al menos 2 participantes' });
         }
-        await writeJsonBlob(CONFIG_KEY, config);
-        const seenKey = getSeenKey(config.seed);
-        await writeJsonBlob(seenKey, []);
+        await writeVersionedJson(CONFIG_PREFIX, config);
+        const seenPrefix = getSeenPrefix(config.seed);
+        await writeVersionedJson(seenPrefix, []);
         return res.status(200).json({ ok: true, config, seen: [] });
       }
 
-      const seenKey = getSeenKey(body.seed);
+      const seenPrefix = getSeenPrefix(body.seed);
 
       if (action === 'reset') {
-        await writeJsonBlob(seenKey, []);
+        await writeVersionedJson(seenPrefix, []);
         return res.status(200).json({ seen: [] });
       }
 
@@ -71,11 +92,11 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Missing participant name' });
       }
 
-      const seenRaw = await readJsonBlob(seenKey, []);
+      const seenRaw = await readLatestJson(seenPrefix, []);
       const seen = Array.isArray(seenRaw) ? seenRaw : [];
       if (!seen.includes(name)) {
         seen.push(name);
-        await writeJsonBlob(seenKey, seen);
+        await writeVersionedJson(seenPrefix, seen);
       }
       return res.status(200).json({ seen });
     }
