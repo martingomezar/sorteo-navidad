@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=7">
+  <link rel="stylesheet" href="css/styles.css?v=9">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
 </head>
 <body>
@@ -171,12 +171,26 @@
       </div>
 
       <div class="modal-body" id="adminAuthBody">
-        <p>Ingresá el PIN maestro del organizador para consultar el sorteo completo o regenerarlo:</p>
+        <p>Ingresá la clave de administrador para gestionar grupos y sorteos:</p>
         <div class="admin-pin-group">
-          <input type="password" id="adminPinInput" maxlength="4" placeholder="PIN Maestro" inputmode="numeric">
+          <input type="password" id="adminPinInput" maxlength="4" placeholder="Clave de Administrador" inputmode="numeric">
           <button type="button" class="btn-festive-small" id="btnVerifyAdmin">Acceder</button>
         </div>
-        <div id="adminPinError" class="error-msg" style="display: none;">PIN maestro incorrecto (Pista: 9999 o 2512)</div>
+        <div id="adminPinError" class="error-msg" style="display: none;">Clave de administrador incorrecta.</div>
+
+        <div class="admin-request-box">
+          <p class="admin-request-title">🎄 ¿Querés usar la app para tu sorteo de Navidad?</p>
+          <p class="admin-request-text">
+            Pedime la clave de administrador enviando un mail a
+            <a href="mailto:martin.adrian.gomez@outlook.com?subject=Solicitud%20clave%20Sorteo%20de%20Navidad" class="admin-mail-link">martin.adrian.gomez@outlook.com</a>
+            con tu dirección de mail y el nombre de tu grupo o familia, y te paso por mail la clave y contraseña de tu grupo:
+          </p>
+          <div class="admin-request-form">
+            <input type="email" id="requestEmailInput" placeholder="Tu dirección de mail">
+            <input type="text" id="requestGroupInput" maxlength="32" placeholder="Nombre de tu grupo / familia">
+            <button type="button" class="btn-admin-action" id="btnRequestAdminMail">✉️ Enviar mail</button>
+          </div>
+        </div>
       </div>
 
       <div class="modal-body" id="adminContentBody" style="display: none;">
@@ -247,6 +261,6 @@
   </div>
 
   <!-- Sonido navideño sintetizado por Web Audio API -->
-  <script src="js/app.js?v=8"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>

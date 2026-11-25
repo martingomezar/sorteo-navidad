@@ -11,7 +11,7 @@
   // -------------------- CONFIGURACIÓN DEL SORTEO --------------------
   const DEFAULT_PIN = '2512';
   const VALID_PINS = ['2512', '2026'];
-  const ADMIN_PINS = ['9999', '2512'];
+  const ADMIN_PINS = ['2904'];
   const DEFAULT_SEED = 2512;
   const STORAGE_LAST_GROUP_KEY = 'sorteo_navidad_last_group_v2';
   const STORAGE_CONFIG_PREFIX = 'sorteo_navidad_config_v2_';
@@ -119,6 +119,9 @@
   const adminPinInput = document.getElementById('adminPinInput');
   const btnVerifyAdmin = document.getElementById('btnVerifyAdmin');
   const adminPinError = document.getElementById('adminPinError');
+  const requestEmailInput = document.getElementById('requestEmailInput');
+  const requestGroupInput = document.getElementById('requestGroupInput');
+  const btnRequestAdminMail = document.getElementById('btnRequestAdminMail');
   const adminPairsList = document.getElementById('adminPairsList');
   const adminBannerGroup = document.getElementById('adminBannerGroup');
   const adminBannerSeed = document.getElementById('adminBannerSeed');
@@ -956,8 +959,23 @@
     saveConfigAndDraw();
   }
 
+  function sendAdminRequestMail() {
+    const email = (requestEmailInput ? requestEmailInput.value.trim() : '') || '';
+    const group = (requestGroupInput ? requestGroupInput.value.trim() : '') || '';
+    if (!email || !group) {
+      showToast('⚠️ Completá tu email y el nombre de tu grupo o familia');
+      return;
+    }
+    const subject = encodeURIComponent(`Solicitud clave Sorteo de Navidad - ${group}`);
+    const body = encodeURIComponent(
+      `Hola Martín,\n\nQuiero usar la app de Sorteo de Navidad.\n\n• Mi mail: ${email}\n• Nombre del grupo/familia: ${group}\n\n¡Gracias!`
+    );
+    window.location.href = `mailto:martin.adrian.gomez@outlook.com?subject=${subject}&body=${body}`;
+  }
+
   btnOpenAdmin.addEventListener('click', openAdminModal);
   if (btnOpenAdminFromPin) btnOpenAdminFromPin.addEventListener('click', openAdminModal);
+  if (btnRequestAdminMail) btnRequestAdminMail.addEventListener('click', sendAdminRequestMail);
   if (btnLoadGroup) btnLoadGroup.addEventListener('click', loadAdminGroup);
   btnCloseAdmin.addEventListener('click', closeAdminModal);
   adminModal.addEventListener('click', (e) => {
