@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=10">
+  <link rel="stylesheet" href="css/styles.css?v=11">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
 </head>
 <body>
@@ -32,20 +32,29 @@
     <span class="light red"></span>
   </div>
 
+  <!-- Selector de idioma arriba a la derecha -->
+  <nav class="lang-switcher" aria-label="Idioma">
+    <button type="button" class="lang-btn active" data-lang="es" title="Español">🇪🇸</button>
+    <button type="button" class="lang-btn" data-lang="pt" title="Português">🇧🇷</button>
+    <button type="button" class="lang-btn" data-lang="en" title="English">🇺🇸</button>
+    <button type="button" class="lang-btn" data-lang="fr" title="Français">🇫🇷</button>
+    <button type="button" class="lang-btn" data-lang="it" title="Italiano">🇮🇹</button>
+  </nav>
+
   <div class="app-container">
 
     <!-- ==================== PANTALLA 1: PIN DE ACCESO ==================== -->
     <section id="screenPin" class="screen active">
       <div class="christmas-card pin-card glass-panel">
-        <div class="festive-badge">✨ Navidad 2026 ✨</div>
+        <div class="festive-badge" data-i18n="badge2026">✨ Navidad 2026 ✨</div>
         <div class="hero-icon">🎁</div>
-        <h1 class="main-title">Sorteo de Navidad</h1>
-        <p class="subtitle">Amigo Invisible de la Familia</p>
+        <h1 class="main-title" data-i18n="mainTitle">Sorteo de Navidad</h1>
+        <p class="subtitle" data-i18n="subtitle">Amigo Invisible</p>
 
-        <p class="pin-instruction">Ingresá el nombre de tu grupo y el PIN de 4 dígitos:</p>
+        <p class="pin-instruction" data-i18n="pinInstruction">Ingresá el nombre de tu grupo y el PIN de 4 dígitos:</p>
 
         <div class="group-input-wrapper">
-          <input type="text" id="groupNameInput" maxlength="32" placeholder="Nombre del grupo" autocomplete="off" aria-label="Nombre del grupo">
+          <input type="text" id="groupNameInput" maxlength="32" data-i18n-placeholder="groupPlaceholder" placeholder="Nombre del grupo" autocomplete="off" aria-label="Nombre del grupo">
         </div>
 
         <div class="pin-display-wrapper">
@@ -79,7 +88,7 @@
         </div>
 
         <div style="margin-top: 12px;">
-          <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdminFromPin">⚙️ Crear o Administrar Grupo</button>
+          <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdminFromPin" data-i18n="btnAdminFromPin">⚙️ Crear o Administrar Grupo</button>
         </div>
       </div>
     </section>
@@ -88,9 +97,9 @@
     <!-- ==================== PANTALLA 2: SELECCIÓN DE NOMBRE ==================== -->
     <section id="screenNames" class="screen">
       <div class="screen-header">
-        <div class="festive-mini-badge">🎄 Grupo: <strong id="activeGroupBadge">Familia</strong></div>
-        <h2 class="section-title">Elegí tu nombre</h2>
-        <p class="privacy-notice">
+        <div class="festive-mini-badge"><span data-i18n="groupLabel">🎄 Grupo:</span> <strong id="activeGroupBadge">Familia</strong></div>
+        <h2 class="section-title" data-i18n="chooseNameTitle">Elegí tu nombre</h2>
+        <p class="privacy-notice" data-i18n-html="privacyNotice">
           🤫 <strong>Regla de oro:</strong> Tocá únicamente tu nombre. Asegurate de que nadie espíe tu pantalla para no arruinar la sorpresa.
         </p>
       </div>
@@ -100,8 +109,8 @@
       </div>
 
       <div class="screen-footer">
-        <button type="button" class="btn-text" id="btnLockApp">🔒 Bloquear / Salir</button>
-        <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdmin">⚙️ Administrador</button>
+        <button type="button" class="btn-text" id="btnLockApp" data-i18n="btnLockApp">🔒 Bloquear / Salir</button>
+        <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdmin" data-i18n="btnOpenAdmin">⚙️ Administrador</button>
       </div>
     </section>
 
@@ -111,8 +120,8 @@
       <div class="reveal-card glass-panel">
         
         <div class="reveal-header">
-          <span class="user-greeting">Hola, <strong id="revealUserName">Martín</strong> 🎅</span>
-          <p class="reveal-subtext">Tu amigo invisible ya fue asignado bajo secreto navideño.</p>
+          <span class="user-greeting"><span data-i18n="revealHello">Hola,</span> <strong id="revealUserName">Martín</strong> 🎅</span>
+          <p class="reveal-subtext" data-i18n="revealSubtext">Tu amigo invisible ya fue asignado bajo secreto navideño.</p>
         </div>
 
         <!-- Estado 1: Caja de regalo cerrada para abrir -->
@@ -125,16 +134,16 @@
             <div class="gift-ribbon-horizontal"></div>
             <div class="gift-body"></div>
           </div>
-          <button type="button" class="btn-festive-main" id="btnOpenGift">
+          <button type="button" class="btn-festive-main" id="btnOpenGift" data-i18n="btnOpenGift">
             🎁 ¡Descubrí a quién le regalás!
           </button>
-          <p class="gift-tap-hint">Tocá la caja o el botón para descubrirlo</p>
+          <p class="gift-tap-hint" data-i18n="giftTapHint">Tocá la caja o el botón para descubrirlo</p>
         </div>
 
         <!-- Estado 2: Regalo revelado con fanfarria -->
         <div id="giftRevealedState" class="gift-revealed-content" style="display: none;">
           <div class="sparkles-icon">✨ 🎁 ✨</div>
-          <span class="assigned-label">Le tenés que regalar a...</span>
+          <span class="assigned-label" data-i18n="assignedLabel">Le tenés que regalar a...</span>
           
           <div class="assigned-name-box">
             <h3 class="assigned-name" id="assignedPersonName">Valeria</h3>
@@ -142,11 +151,11 @@
 
           <div class="secret-rule-box">
             <span class="secret-icon">🤫</span>
-            <p><strong>¡Guardá el secreto!</strong> No le cuentes a nadie hasta el brindis de Nochebuena.</p>
+            <p data-i18n-html="secretRule"><strong>¡Guardá el secreto!</strong> No le cuentes a nadie hasta el brindis de Nochebuena.</p>
           </div>
 
           <div class="reveal-actions">
-            <button type="button" class="btn-festive-secondary" id="btnHideSecret">
+            <button type="button" class="btn-festive-secondary" id="btnHideSecret" data-i18n="btnHideSecret">
               🔒 Ocultar y Salir
             </button>
           </div>
@@ -162,27 +171,27 @@
   <div class="modal-backdrop" id="adminModal" style="display: none;">
     <div class="modal-card glass-panel">
       <div class="modal-header">
-        <h3>⚙️ Panel del Organizador</h3>
+        <h3 data-i18n="adminTitle">⚙️ Panel del Organizador</h3>
         <button type="button" class="modal-close" id="btnCloseAdmin">&times;</button>
       </div>
 
       <div class="modal-body" id="adminAuthBody">
-        <p>Ingresá la clave de administrador para gestionar grupos y sorteos:</p>
+        <p data-i18n="adminAuthPrompt">Ingresá la clave de administrador para gestionar grupos y sorteos:</p>
         <div class="admin-pin-group">
-          <input type="password" id="adminPinInput" maxlength="4" placeholder="Clave de Administrador" inputmode="numeric">
-          <button type="button" class="btn-festive-small" id="btnVerifyAdmin">Acceder</button>
+          <input type="password" id="adminPinInput" maxlength="4" data-i18n-placeholder="adminPinPlaceholder" placeholder="Clave de Administrador" inputmode="numeric">
+          <button type="button" class="btn-festive-small" id="btnVerifyAdmin" data-i18n="btnVerifyAdmin">Acceder</button>
         </div>
-        <div id="adminPinError" class="error-msg" style="display: none;">Clave de administrador incorrecta.</div>
+        <div id="adminPinError" class="error-msg" style="display: none;" data-i18n="adminPinError">Clave de administrador incorrecta.</div>
 
         <div class="admin-request-box">
-          <p class="admin-request-title">🎄 ¿Querés usar la app para tu sorteo de Navidad?</p>
-          <p class="admin-request-text">
+          <p class="admin-request-title" data-i18n="reqTitle">🎄 ¿Querés usar la app para tu sorteo de Navidad?</p>
+          <p class="admin-request-text" data-i18n-html="reqText">
             <strong>El uso es 100% gratuito.</strong> Completá este formulario con tu dirección de mail y el nombre de tu grupo o familia, y te enviamos por mail la clave y contraseña de tu grupo:
           </p>
           <div class="admin-request-form">
-            <input type="email" id="requestEmailInput" placeholder="Tu dirección de mail">
-            <input type="text" id="requestGroupInput" maxlength="32" placeholder="Nombre de tu grupo / familia">
-            <button type="button" class="btn-admin-action" id="btnRequestAdminMail">📩 Enviar solicitud</button>
+            <input type="email" id="requestEmailInput" data-i18n-placeholder="reqEmailPlaceholder" placeholder="Tu dirección de mail">
+            <input type="text" id="requestGroupInput" maxlength="32" data-i18n-placeholder="reqGroupPlaceholder" placeholder="Nombre de tu grupo / familia">
+            <button type="button" class="btn-admin-action" id="btnRequestAdminMail" data-i18n="btnRequestMail">📩 Enviar solicitud</button>
           </div>
           <div id="requestStatusMsg" class="request-status-msg" style="display: none;"></div>
         </div>
@@ -190,36 +199,36 @@
 
       <div class="modal-body" id="adminContentBody" style="display: none;">
         <div class="admin-stat-banner">
-          <span>🎄 Grupo: <strong id="adminBannerGroup">Familia</strong> · <strong>#<span id="adminBannerSeed">2512</span></strong></span>
-          <span class="badge-valid">✓ Sin auto-regalos</span>
+          <span><span data-i18n="groupLabel">🎄 Grupo:</span> <strong id="adminBannerGroup">Familia</strong> · <strong>#<span id="adminBannerSeed">2512</span></strong></span>
+          <span class="badge-valid" data-i18n="badgeNoSelf">✓ Sin auto-regalos</span>
         </div>
 
         <!-- Configuración del Grupo -->
         <div class="admin-section">
-          <h4 class="admin-section-title">🏷️ Grupo y PIN de acceso</h4>
+          <h4 class="admin-section-title" data-i18n="secGroupTitle">🏷️ Grupo y PIN de acceso</h4>
           <div class="admin-input-row">
-            <input type="text" id="adminGroupNameInput" maxlength="32" placeholder="Nombre del grupo (ej: Oficina)">
-            <button type="button" class="btn-festive-small" id="btnLoadGroup" title="Cargar si ya existe">Cargar</button>
+            <input type="text" id="adminGroupNameInput" maxlength="32" data-i18n-placeholder="adminGroupPlaceholder" placeholder="Nombre del grupo (ej: Oficina)">
+            <button type="button" class="btn-festive-small" id="btnLoadGroup" data-i18n="btnLoadGroup" title="Cargar si ya existe">Cargar</button>
           </div>
           <div class="admin-input-row" style="margin-bottom: 0;">
-            <input type="text" id="adminGroupPinInput" inputmode="numeric" maxlength="4" placeholder="PIN de 4 dígitos (ej: 1234)">
+            <input type="text" id="adminGroupPinInput" inputmode="numeric" maxlength="4" data-i18n-placeholder="adminPinGroupPlaceholder" placeholder="PIN de 4 dígitos (ej: 1234)">
           </div>
         </div>
 
         <!-- Gestión de Participantes -->
         <div class="admin-section">
-          <h4 class="admin-section-title">👥 Participantes (<span id="adminParticipantCount">7</span>)</h4>
+          <h4 class="admin-section-title"><span data-i18n="secParticipantsTitle">👥 Participantes</span> (<span id="adminParticipantCount">7</span>)</h4>
           <div class="admin-input-row">
-            <input type="text" id="newParticipantInput" maxlength="24" placeholder="Nombre nuevo...">
-            <button type="button" class="btn-festive-small" id="btnAddParticipant">+ Agregar</button>
+            <input type="text" id="newParticipantInput" maxlength="24" data-i18n-placeholder="newPartPlaceholder" placeholder="Nombre nuevo...">
+            <button type="button" class="btn-festive-small" id="btnAddParticipant" data-i18n="btnAddPart">+ Agregar</button>
           </div>
           <div class="admin-chips-list" id="adminParticipantsList"></div>
         </div>
 
         <!-- Gestión de Exclusiones -->
         <div class="admin-section">
-          <h4 class="admin-section-title">🚫 No se regalan entre sí</h4>
-          <p class="admin-helper-text">Nadie puede autoregalarse (siempre activo). Marcá quiénes no deben cruzarse:</p>
+          <h4 class="admin-section-title" data-i18n="secExclusionsTitle">🚫 No se regalan entre sí</h4>
+          <p class="admin-helper-text" data-i18n="secExclusionsHelp">Nadie puede autoregalarse (siempre activo). Marcá quiénes no deben cruzarse:</p>
           <div class="admin-exclusion-row">
             <select id="exclSelectA" aria-label="Primera persona"></select>
             <span class="excl-vs">↔</span>
@@ -230,30 +239,30 @@
           <div id="adminConfigError" class="error-msg" style="display: none; margin-top: 8px;"></div>
         </div>
 
-        <button type="button" class="btn-admin-save" id="btnSaveAndDraw">
+        <button type="button" class="btn-admin-save" id="btnSaveAndDraw" data-i18n="btnSaveAndDraw">
           💾 Guardar Cambios y Sortear
         </button>
 
-        <p class="admin-notice" style="margin-top: 14px;">Matriz completa de asignaciones (solo visible para el organizador):</p>
+        <p class="admin-notice" style="margin-top: 14px;" data-i18n="adminMatrixNotice">Matriz completa de asignaciones (solo visible para el organizador):</p>
 
         <div class="admin-pairs-list" id="adminPairsList">
           <!-- Lista completa generada en JS -->
         </div>
 
         <div class="admin-actions">
-          <button type="button" class="btn-admin-action" id="btnShareWhatsApp">
-            📲 Copiar Enlaces de WhatsApp para la Familia
+          <button type="button" class="btn-admin-action" id="btnShareWhatsApp" data-i18n="btnShareWhatsApp">
+            📲 Copiar Enlaces de WhatsApp
           </button>
-          <button type="button" class="btn-festive-secondary" id="btnResetSeen" style="max-width: 100%; border-radius: 12px; padding: 10px; font-size: 0.88rem;">
+          <button type="button" class="btn-festive-secondary" id="btnResetSeen" data-i18n="btnResetSeen" style="max-width: 100%; border-radius: 12px; padding: 10px; font-size: 0.88rem;">
             🔄 Reiniciar nombres tachados
           </button>
-          <button type="button" class="btn-admin-danger" id="btnReshuffle">
+          <button type="button" class="btn-admin-danger" id="btnReshuffle" data-i18n="btnReshuffle">
             🎲 Sortear de Nuevo (Cambiar Asignaciones)
           </button>
         </div>
 
         <div class="admin-section" style="margin-top: 14px; margin-bottom: 0;">
-          <h4 class="admin-section-title">📩 Solicitudes de nuevos grupos</h4>
+          <h4 class="admin-section-title" data-i18n="secRequestsTitle">📩 Solicitudes de nuevos grupos</h4>
           <div id="adminRequestsList" class="admin-pairs-list" style="max-height: 150px; margin-bottom: 0;"></div>
         </div>
       </div>
@@ -261,6 +270,7 @@
   </div>
 
   <!-- Sonido navideño sintetizado por Web Audio API -->
-  <script src="js/app.js?v=10"></script>
+  <script src="js/i18n.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
 </body>
 </html>

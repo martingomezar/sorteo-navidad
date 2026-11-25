@@ -8,6 +8,8 @@
 (() => {
   'use strict';
 
+  const t = (key, vars) => (window.SortI18n ? window.SortI18n.t(key, vars) : key);
+
   // -------------------- CONFIGURACIÓN DEL SORTEO --------------------
   const DEFAULT_PIN = '2512';
   const VALID_PINS = ['2512', '2026'];
@@ -523,8 +525,8 @@
       resetPin();
     } else {
       pinErrorMsg.textContent = remoteConfig
-        ? `🎅 PIN incorrecto para el grupo "${remoteConfig.groupName || typedGroup}".`
-        : `🎅 Grupo "${typedGroup}" o PIN incorrecto.`;
+        ? t('pinErrorGroup', { group: remoteConfig.groupName || typedGroup })
+        : t('pinErrorNotFound', { group: typedGroup });
       pinErrorMsg.style.display = 'block';
       pinErrorMsg.style.animation = 'none';
       void pinErrorMsg.offsetWidth;
@@ -583,7 +585,7 @@
       card.innerHTML = `
         <span class="p-avatar" aria-hidden="true">${person.avatar}</span>
         <span class="p-name">${person.name}</span>
-        <span class="p-hint">${isSeen ? '🔒 Ya lo vio' : 'Tocar para ver'}</span>
+        <span class="p-hint">${isSeen ? t('cardAlreadySeen') : t('cardTapToSee')}</span>
       `;
       if (!isSeen) {
         card.addEventListener('click', () => selectParticipant(person.name));
@@ -596,7 +598,7 @@
     await syncSeenFromServer();
     if (getSeenUsers().includes(name)) {
       renderParticipants();
-      showToast(`🔒 ${name} ya descubrió a quién le regala`);
+      showToast(t('toastAlreadySeen', { name }));
       return;
     }
     selectedUser = name;
@@ -708,7 +710,7 @@
           draftExclusions = exclusions.map((e) => [...e]);
           renderAdminConfig();
           renderAdminMatrix();
-          showToast(`📂 Grupo "${currentGroupName}" cargado`);
+          showToast(t('toastGroupLoaded', { group: currentGroupName }));
           return;
         }
       }
@@ -716,7 +718,7 @@
       // Ignorar
     }
 
-    showToast(`✨ "${rawName}" es un grupo nuevo: editá participantes y guardá`);
+    showToast(t('toastNewGroup', { group: rawName }));
   }
 
   function renderAdminConfig() {
@@ -757,7 +759,7 @@
     if (draftExclusions.length === 0) {
       const empty = document.createElement('span');
       empty.className = 'admin-helper-text';
-      empty.textContent = 'Sin restricciones adicionales (solo se evita el auto-regalo).';
+      empty.textContent = t('noExtraExclusions');
       adminExclusionsList.appendChild(empty);
     } else {
       draftExclusions.forEach(([a, b], idx) => {
@@ -779,7 +781,7 @@
     if (!raw) return;
     const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     if (draftParticipants.some((p) => norm(p.name) === norm(raw))) {
-      adminConfigError.textContent = `⚠️ "${raw}" ya está en la lista.`;
+      adminConfigError.textContent = t('errDuplicatePart', { name: raw });
       adminConfigError.style.display = 'block';
       return;
     }
@@ -792,7 +794,7 @@
 
   function removeDraftParticipant(idx) {
     if (draftParticipants.length <= 2) {
-      adminConfigError.textContent = '⚠️ Debe haber al menos 2 participantes.';
+      adminConfigError.textContent = t('errMinPart');
       adminConfigError.style.display = 'block';
       return;
     }
@@ -807,7 +809,7 @@
     const a = exclSelectA.value;
     const b = exclSelectB.value;
     if (!a || !b || a === b) {
-      adminConfigError.textContent = '⚠️ Elegí dos personas distintas (el auto-regalo ya está bloqueado).';
+      adminConfigError.textContent = t('errSamePerson');
       adminConfigError.style.display = 'block';
       return;
     }
@@ -825,24 +827,24 @@
     const rawGroupPin = adminGroupPinInput.value.replace(/\D/g, '').slice(0, 4);
 
     if (!rawGroupName) {
-      adminConfigError.textContent = '⚠️ Ingresá un nombre para el grupo.';
+      adminConfigError.textContent = t('errNoGroupName');
       adminConfigError.style.display = 'block';
       return;
     }
     if (rawGroupPin.length !== 4) {
-      adminConfigError.textContent = '⚠️ El PIN del grupo debe tener 4 dígitos numéricos.';
+      adminConfigError.textContent = t('errBadPin');
       adminConfigError.style.display = 'block';
       return;
     }
     if (draftParticipants.length < 2) {
-      adminConfigError.textContent = '⚠️ Se necesitan al menos 2 participantes.';
+      adminConfigError.textContent = t('errMinPart');
       adminConfigError.style.display = 'block';
       return;
     }
     const newSeed = customSeed || Math.floor(1000 + Math.random() * 9000);
     const nextAssignments = generateValidDraw(newSeed, draftParticipants, draftExclusions);
     if (!nextAssignments) {
-      adminConfigError.textContent = '⚠️ Con esas exclusiones es imposible sortear sin que alguien quede afuera o se autoregale. Quitá alguna restricción.';
+      adminConfigError.textContent = t('errImpossibleDraw');
       adminConfigError.style.display = 'block';
       playErrorTone();
       return;
@@ -883,7 +885,7 @@
     renderParticipants();
     renderAdminMatrix();
     playFestiveJingle();
-    showToast(`💾 Grupo "${currentGroupName}" guardado (PIN: ${currentGroupPin})`);
+    showToast(t('toastGroupSaved', { group: currentGroupName, pin: currentGroupPin }));
   }
 
   function renderAdminMatrix() {
@@ -905,9 +907,9 @@
   function copyWhatsAppLinks() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const lines = [
-      `🎄 *Sorteo de Navidad — Grupo: ${currentGroupName}* 🎁`,
-      `Ingresá con Grupo: *${currentGroupName}* | PIN: *${currentGroupPin}*`,
-      'O tocá tu enlace personal directo:',
+      t('waHeader', { group: currentGroupName }),
+      t('waCreds', { group: currentGroupName, pin: currentGroupPin }),
+      t('waDirect'),
       ''
     ];
     participants.forEach((p) => {
@@ -918,7 +920,7 @@
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('📲 Enlaces de WhatsApp copiados al portapapeles');
+        showToast(t('toastWhatsAppCopied'));
       }).catch(() => {
         fallbackCopy(text);
       });
@@ -936,9 +938,9 @@
     ta.select();
     try {
       document.execCommand('copy');
-      showToast('📲 Enlaces de WhatsApp copiados al portapapeles');
+      showToast(t('toastWhatsAppCopied'));
     } catch (_) {
-      showToast('⚠️ No se pudo copiar automáticamente');
+      showToast(t('toastCopyFail'));
     }
     document.body.removeChild(ta);
   }
@@ -955,7 +957,7 @@
       // Ignorar si no hay backend disponible
     }
     renderParticipants();
-    showToast('🔄 Nombres tachados reiniciados para todos');
+    showToast(t('toastResetSeen'));
   }
 
   function reshuffleDraw() {
@@ -964,20 +966,20 @@
 
   async function loadAdminRequests(adminPin) {
     if (!adminRequestsList) return;
-    adminRequestsList.innerHTML = '<span class="admin-helper-text">Cargando solicitudes...</span>';
+    adminRequestsList.innerHTML = `<span class="admin-helper-text">${t('loadingRequests')}</span>`;
     try {
       const res = await fetch(
         `${API_URL}?action=list_requests&adminPin=${encodeURIComponent(adminPin)}&t=${Date.now()}`,
         { cache: 'no-store' }
       );
       if (!res.ok) {
-        adminRequestsList.innerHTML = '<span class="admin-helper-text">No se pudieron cargar las solicitudes.</span>';
+        adminRequestsList.innerHTML = `<span class="admin-helper-text">${t('errorRequests')}</span>`;
         return;
       }
       const data = await res.json();
       const list = Array.isArray(data.requests) ? data.requests : [];
       if (list.length === 0) {
-        adminRequestsList.innerHTML = '<span class="admin-helper-text">Todavía no hay solicitudes nuevas.</span>';
+        adminRequestsList.innerHTML = `<span class="admin-helper-text">${t('noRequests')}</span>`;
         return;
       }
       adminRequestsList.innerHTML = '';
@@ -986,20 +988,20 @@
         row.className = 'admin-pair-row';
         row.innerHTML = `
           <div style="overflow:hidden; text-overflow:ellipsis;">
-            <strong style="color:#FCE28A;">${item.group || 'Sin grupo'}</strong><br>
+            <strong style="color:#FCE28A;">${item.group || '—'}</strong><br>
             <span style="font-size:0.78rem; color:#CBD5E1;">${item.email || ''}</span>
           </div>
-          <button type="button" class="btn-festive-small" style="padding:4px 10px; font-size:0.78rem;">Usar</button>
+          <button type="button" class="btn-festive-small" style="padding:4px 10px; font-size:0.78rem;">${t('btnUseRequest')}</button>
         `;
         row.querySelector('button').addEventListener('click', () => {
           adminGroupNameInput.value = item.group || '';
           adminGroupPinInput.value = String(Math.floor(1000 + Math.random() * 9000));
-          showToast(`✏️ Grupo "${item.group}" listo para configurar`);
+          showToast(t('toastUsingRequest', { group: item.group || '' }));
         });
         adminRequestsList.appendChild(row);
       });
     } catch (_) {
-      adminRequestsList.innerHTML = '<span class="admin-helper-text">Error al cargar solicitudes.</span>';
+      adminRequestsList.innerHTML = `<span class="admin-helper-text">${t('errorRequests')}</span>`;
     }
   }
 
@@ -1007,7 +1009,7 @@
     const email = (requestEmailInput ? requestEmailInput.value.trim() : '') || '';
     const group = (requestGroupInput ? requestGroupInput.value.trim() : '') || '';
     if (!email || !group) {
-      showToast('⚠️ Completá tu email y el nombre de tu grupo o familia');
+      showToast(t('reqMissing'));
       return;
     }
     if (btnRequestAdminMail) btnRequestAdminMail.disabled = true;
@@ -1021,15 +1023,15 @@
         if (requestEmailInput) requestEmailInput.value = '';
         if (requestGroupInput) requestGroupInput.value = '';
         if (requestStatusMsg) {
-          requestStatusMsg.textContent = '✅ ¡Solicitud enviada! Te enviaremos por mail la clave y contraseña de tu grupo.';
+          requestStatusMsg.textContent = t('reqSuccess');
           requestStatusMsg.style.display = 'block';
         }
-        showToast('📩 ¡Solicitud enviada!');
+        showToast(t('reqSuccess'));
       } else {
-        showToast('⚠️ No se pudo enviar la solicitud. Intentá de nuevo.');
+        showToast(t('reqFail'));
       }
     } catch (_) {
-      showToast('⚠️ Error de conexión al enviar la solicitud.');
+      showToast(t('reqConnError'));
     } finally {
       if (btnRequestAdminMail) btnRequestAdminMail.disabled = false;
     }
@@ -1266,6 +1268,18 @@
   }
 
   // -------------------- INICIALIZACIÓN --------------------
+  if (window.SortI18n) {
+    window.SortI18n.applyTranslations();
+    document.querySelectorAll('.lang-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.SortI18n.setLanguage(btn.dataset.lang);
+      });
+    });
+    window.addEventListener('sorteo:langchange', () => {
+      if (screens.names.classList.contains('active')) renderParticipants();
+      if (adminContentBody.style.display !== 'none') renderAdminConfig();
+    });
+  }
   initSnow();
   animateCanvas();
   checkDirectUrlAccess();
