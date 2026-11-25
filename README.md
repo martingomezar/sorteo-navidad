@@ -11,8 +11,8 @@ Aplicación web estática diseñada para organizar el Amigo Invisible familiar e
   - **Sin cruce de parejas:**
     - Martín ↔ Valeria
     - Marcelo ↔ Julieta
-    - Marina ↔ Pablo
     - Alicia ↔ Jorge
+    - Marina (participación individual)
 - **Experiencia Navideña:**
   - Nieve animada en Canvas, guirnalda de luces parpadeantes y paleta festiva (*Crimson Noel*, *Pine Green*, *Gold Glow*).
   - Caja de regalo 3D interactiva con animación de apertura, destellos dorados y melodía sintetizada con Web Audio API (sin archivos externos).

@@ -21,8 +21,7 @@
     { name: 'Valeria', partner: 'Martin',  avatar: '🤶' },
     { name: 'Marcelo', partner: 'Julieta', avatar: '🦌' },
     { name: 'Julieta', partner: 'Marcelo', avatar: '⭐' },
-    { name: 'Marina',  partner: 'Pablo',   avatar: '🎄' },
-    { name: 'Pablo',   partner: 'Marina',  avatar: '⛄' },
+    { name: 'Marina',  partner: null,      avatar: '🎄' },
     { name: 'Alicia',  partner: 'Jorge',   avatar: '🕯️' },
     { name: 'Jorge',   partner: 'Alicia',  avatar: '🧝' }
   ];
@@ -177,16 +176,15 @@
       }
     }
 
-    // Fallback determinista garantizado (ciclo único válido)
+    // Fallback determinista garantizado (ciclo único válido de 7 participantes)
     return {
       Alicia: 'Marcelo',
-      Marcelo: 'Pablo',
-      Pablo: 'Valeria',
+      Marcelo: 'Marina',
+      Marina: 'Valeria',
       Valeria: 'Julieta',
       Julieta: 'Martin',
       Martin: 'Jorge',
-      Jorge: 'Marina',
-      Marina: 'Alicia'
+      Jorge: 'Alicia'
     };
   }
 
