@@ -13,6 +13,7 @@
   const ADMIN_PINS = ['9999', '2512'];
   const DEFAULT_SEED = 2512;
   const STORAGE_SEED_KEY = 'sorteo_navidad_seed_v1';
+  const STORAGE_SEEN_PREFIX = 'sorteo_navidad_seen_v1_';
 
   // Participantes y sus parejas (no pueden regalarse entre sí ni a sí mismos)
   const PARTICIPANTS = [
@@ -110,6 +111,29 @@
       localStorage.setItem(STORAGE_SEED_KEY, String(seed));
     } catch (_) {
       // Ignorar si localStorage no está disponible
+    }
+  }
+
+  function getSeenUsers() {
+    try {
+      const raw = localStorage.getItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function markUserAsSeen(name) {
+    if (!name) return;
+    const seen = getSeenUsers();
+    if (!seen.includes(name)) {
+      seen.push(name);
+      try {
+        localStorage.setItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`, JSON.stringify(seen));
+      } catch (_) {
+        // Ignorar si localStorage no está disponible
+      }
     }
   }
 
@@ -268,15 +292,17 @@
 
   // -------------------- PANTALLA 2: PARTICIPANTES --------------------
   function renderParticipants() {
+    const seenUsers = getSeenUsers();
     participantsGrid.innerHTML = '';
     PARTICIPANTS.forEach((person) => {
+      const isSeen = seenUsers.includes(person.name);
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'participant-card';
+      card.className = isSeen ? 'participant-card seen' : 'participant-card';
       card.innerHTML = `
         <span class="p-avatar" aria-hidden="true">${person.avatar}</span>
         <span class="p-name">${person.name}</span>
-        <span class="p-hint">Tocar para ver</span>
+        <span class="p-hint">${isSeen ? '✓ Ya vio su regalo' : 'Tocar para ver'}</span>
       `;
       card.addEventListener('click', () => selectParticipant(person.name));
       participantsGrid.appendChild(card);
@@ -309,6 +335,7 @@
     if (isOpeningGift) return;
     isOpeningGift = true;
 
+    markUserAsSeen(selectedUser);
     clickableGiftBox.classList.add('opened');
     playFestiveJingle();
 

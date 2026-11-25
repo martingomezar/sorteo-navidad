@@ -392,6 +392,24 @@ html, body {
   opacity: 0.85;
 }
 
+.participant-card.seen {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(72, 187, 120, 0.3);
+  opacity: 0.58;
+}
+
+.participant-card.seen .p-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+  color: #94A3B8;
+}
+
+.participant-card.seen .p-hint {
+  color: #68D391;
+  opacity: 0.95;
+}
+
 .screen-footer {
   display: flex;
   justify-content: space-between;
