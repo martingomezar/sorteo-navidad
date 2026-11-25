@@ -395,7 +395,18 @@ html, body {
 .participant-card.seen {
   background: rgba(255, 255, 255, 0.025);
   border-color: rgba(72, 187, 120, 0.3);
-  opacity: 0.58;
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.participant-card.seen:hover,
+.participant-card.seen:active {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(72, 187, 120, 0.3);
+  transform: none;
+  box-shadow: none;
 }
 
 .participant-card.seen .p-name {

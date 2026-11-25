@@ -74,6 +74,7 @@
   const adminPairsList = document.getElementById('adminPairsList');
   const adminStatBanner = document.querySelector('.admin-stat-banner span');
   const btnShareWhatsApp = document.getElementById('btnShareWhatsApp');
+  const btnResetSeen = document.getElementById('btnResetSeen');
   const btnReshuffle = document.getElementById('btnReshuffle');
 
   // -------------------- PRNG DETERMINISTA Y ALGORITMO DE SORTEO --------------------
@@ -299,17 +300,24 @@
       const card = document.createElement('button');
       card.type = 'button';
       card.className = isSeen ? 'participant-card seen' : 'participant-card';
+      card.disabled = isSeen;
       card.innerHTML = `
         <span class="p-avatar" aria-hidden="true">${person.avatar}</span>
         <span class="p-name">${person.name}</span>
-        <span class="p-hint">${isSeen ? '✓ Ya vio su regalo' : 'Tocar para ver'}</span>
+        <span class="p-hint">${isSeen ? '🔒 Ya lo vio' : 'Tocar para ver'}</span>
       `;
-      card.addEventListener('click', () => selectParticipant(person.name));
+      if (!isSeen) {
+        card.addEventListener('click', () => selectParticipant(person.name));
+      }
       participantsGrid.appendChild(card);
     });
   }
 
   function selectParticipant(name) {
+    if (getSeenUsers().includes(name)) {
+      showToast(`🔒 ${name} ya descubrió a quién le regala`);
+      return;
+    }
     selectedUser = name;
     isOpeningGift = false;
     revealUserName.textContent = name;
@@ -447,10 +455,21 @@
     document.body.removeChild(ta);
   }
 
+  function resetSeenUsers() {
+    try {
+      localStorage.removeItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`);
+    } catch (_) {
+      // Ignorar si localStorage no está disponible
+    }
+    renderParticipants();
+    showToast('🔄 Nombres tachados reiniciados');
+  }
+
   function reshuffleDraw() {
     const newSeed = Math.floor(1000 + Math.random() * 9000);
     saveSeed(newSeed);
     assignments = generateValidDraw(newSeed);
+    renderParticipants();
     renderAdminMatrix();
     playFestiveJingle();
     showToast(`🎲 Nuevo sorteo generado (Semilla #${newSeed})`);
@@ -466,6 +485,7 @@
     if (e.key === 'Enter') verifyAdmin();
   });
   btnShareWhatsApp.addEventListener('click', copyWhatsAppLinks);
+  if (btnResetSeen) btnResetSeen.addEventListener('click', resetSeenUsers);
   btnReshuffle.addEventListener('click', reshuffleDraw);
 
   // -------------------- TOAST --------------------
