@@ -9,15 +9,16 @@
   'use strict';
 
   // -------------------- CONFIGURACIÓN DEL SORTEO --------------------
+  const DEFAULT_PIN = '2512';
   const VALID_PINS = ['2512', '2026'];
   const ADMIN_PINS = ['9999', '2512'];
   const DEFAULT_SEED = 2512;
-  const STORAGE_SEED_KEY = 'sorteo_navidad_seed_v1';
-  const STORAGE_CONFIG_KEY = 'sorteo_navidad_config_v1';
-  const STORAGE_SEEN_PREFIX = 'sorteo_navidad_seen_v1_';
+  const STORAGE_LAST_GROUP_KEY = 'sorteo_navidad_last_group_v2';
+  const STORAGE_CONFIG_PREFIX = 'sorteo_navidad_config_v2_';
+  const STORAGE_SEEN_PREFIX = 'sorteo_navidad_seen_v2_';
   const AVATAR_POOL = ['🎅', '🤶', '🦌', '⭐', '🎄', '🕯️', '🧝', '⛄', '🎁', '🔔', '❄️', '🍪'];
 
-  // Participantes y exclusiones por defecto (nunca auto-regalos)
+  // Participantes y exclusiones por defecto (grupo Familia)
   const DEFAULT_PARTICIPANTS = [
     { name: 'Martin',  avatar: '🎅' },
     { name: 'Valeria', avatar: '🤶' },
@@ -34,8 +35,35 @@
     ['Alicia', 'Jorge']
   ];
 
+  function normalizeGroupSlug(name) {
+    const clean = String(name || 'Familia')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return clean || 'familia';
+  }
+
+  function loadInitialGroupName() {
+    const params = new URLSearchParams(window.location.search);
+    const urlGroup = params.get('g');
+    if (urlGroup && urlGroup.trim()) return urlGroup.trim();
+    try {
+      const saved = localStorage.getItem(STORAGE_LAST_GROUP_KEY);
+      if (saved && saved.trim()) return saved.trim();
+    } catch (_) {
+      // Ignorar
+    }
+    return 'Familia';
+  }
+
   // -------------------- ESTADO DE LA APLICACIÓN --------------------
-  const initialConfig = loadLocalConfig();
+  let currentGroupName = loadInitialGroupName();
+  let currentGroupSlug = normalizeGroupSlug(currentGroupName);
+  const initialConfig = loadLocalConfig(currentGroupSlug);
+  let currentGroupPin = initialConfig.pin;
   let participants = initialConfig.participants;
   let exclusions = initialConfig.exclusions;
   let currentSeed = loadInitialSeed(initialConfig.seed);
@@ -56,14 +84,17 @@
   };
 
   // Pantalla 1: PIN
+  const groupNameInput = document.getElementById('groupNameInput');
   const pinDots = Array.from(document.querySelectorAll('#pinDots .dot'));
   const pinInput = document.getElementById('pinInput');
   const pinErrorMsg = document.getElementById('pinErrorMsg');
   const numBtns = document.querySelectorAll('.num-btn[data-val]');
   const btnClearPin = document.getElementById('btnClearPin');
   const btnSubmitPin = document.getElementById('btnSubmitPin');
+  const btnOpenAdminFromPin = document.getElementById('btnOpenAdminFromPin');
 
   // Pantalla 2: Nombres
+  const activeGroupBadge = document.getElementById('activeGroupBadge');
   const participantsGrid = document.getElementById('participantsGrid');
   const btnLockApp = document.getElementById('btnLockApp');
   const btnOpenAdmin = document.getElementById('btnOpenAdmin');
@@ -86,7 +117,11 @@
   const btnVerifyAdmin = document.getElementById('btnVerifyAdmin');
   const adminPinError = document.getElementById('adminPinError');
   const adminPairsList = document.getElementById('adminPairsList');
-  const adminStatBanner = document.querySelector('.admin-stat-banner span');
+  const adminBannerGroup = document.getElementById('adminBannerGroup');
+  const adminBannerSeed = document.getElementById('adminBannerSeed');
+  const adminGroupNameInput = document.getElementById('adminGroupNameInput');
+  const btnLoadGroup = document.getElementById('btnLoadGroup');
+  const adminGroupPinInput = document.getElementById('adminGroupPinInput');
   const btnShareWhatsApp = document.getElementById('btnShareWhatsApp');
   const btnResetSeen = document.getElementById('btnResetSeen');
   const btnReshuffle = document.getElementById('btnReshuffle');
@@ -113,13 +148,16 @@
     };
   }
 
-  function loadLocalConfig() {
+  function loadLocalConfig(groupSlug = currentGroupSlug) {
     try {
-      const raw = localStorage.getItem(STORAGE_CONFIG_KEY);
+      const raw = localStorage.getItem(`${STORAGE_CONFIG_PREFIX}${groupSlug}`);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.participants) && parsed.participants.length >= 2) {
           return {
+            groupName: parsed.groupName || currentGroupName,
+            groupSlug,
+            pin: parsed.pin || DEFAULT_PIN,
             participants: parsed.participants,
             exclusions: Array.isArray(parsed.exclusions) ? parsed.exclusions : [],
             seed: parsed.seed || DEFAULT_SEED
@@ -130,6 +168,9 @@
       // Ignorar si localStorage no está disponible
     }
     return {
+      groupName: groupSlug === 'familia' ? 'Familia' : currentGroupName,
+      groupSlug,
+      pin: DEFAULT_PIN,
       participants: DEFAULT_PARTICIPANTS.map((p) => ({ ...p })),
       exclusions: DEFAULT_EXCLUSIONS.map((e) => [...e]),
       seed: DEFAULT_SEED
@@ -137,8 +178,10 @@
   }
 
   function saveLocalConfig(cfg) {
+    const slug = cfg.groupSlug || normalizeGroupSlug(cfg.groupName);
     try {
-      localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(cfg));
+      localStorage.setItem(`${STORAGE_CONFIG_PREFIX}${slug}`, JSON.stringify(cfg));
+      localStorage.setItem(STORAGE_LAST_GROUP_KEY, cfg.groupName || slug);
     } catch (_) {
       // Ignorar si localStorage no está disponible
     }
@@ -153,29 +196,16 @@
     if (configSeed && !Number.isNaN(Number(configSeed))) {
       return Number(configSeed);
     }
-    try {
-      const saved = parseInt(localStorage.getItem(STORAGE_SEED_KEY), 10);
-      if (!Number.isNaN(saved) && saved > 0) {
-        return saved;
-      }
-    } catch (_) {
-      // Ignorar si localStorage no está disponible
-    }
     return DEFAULT_SEED;
   }
 
   function saveSeed(seed) {
     currentSeed = seed;
-    try {
-      localStorage.setItem(STORAGE_SEED_KEY, String(seed));
-    } catch (_) {
-      // Ignorar si localStorage no está disponible
-    }
   }
 
   function loadLocalSeenUsers() {
     try {
-      const raw = localStorage.getItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`);
+      const raw = localStorage.getItem(`${STORAGE_SEEN_PREFIX}${currentGroupSlug}_${currentSeed}`);
       const parsed = raw ? JSON.parse(raw) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch (_) {
@@ -186,7 +216,10 @@
   function saveLocalSeenUsers(list) {
     seenUsersCache = Array.isArray(list) ? list : [];
     try {
-      localStorage.setItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`, JSON.stringify(seenUsersCache));
+      localStorage.setItem(
+        `${STORAGE_SEEN_PREFIX}${currentGroupSlug}_${currentSeed}`,
+        JSON.stringify(seenUsersCache)
+      );
     } catch (_) {
       // Ignorar si localStorage no está disponible
     }
@@ -196,31 +229,52 @@
     return seenUsersCache;
   }
 
-  async function syncSeenFromServer() {
+  function applyRemoteConfig(remoteCfg) {
+    const remoteSeed = Number(remoteCfg.seed) || DEFAULT_SEED;
+    const remoteSlug = remoteCfg.groupSlug || normalizeGroupSlug(remoteCfg.groupName);
+    const sameParticipants =
+      JSON.stringify(remoteCfg.participants) === JSON.stringify(participants);
+    const sameExclusions =
+      JSON.stringify(remoteCfg.exclusions || []) === JSON.stringify(exclusions);
+
+    const changed =
+      remoteSlug !== currentGroupSlug ||
+      remoteSeed !== currentSeed ||
+      remoteCfg.pin !== currentGroupPin ||
+      !sameParticipants ||
+      !sameExclusions;
+
+    currentGroupSlug = remoteSlug;
+    currentGroupName = remoteCfg.groupName || remoteSlug;
+    currentGroupPin = remoteCfg.pin || DEFAULT_PIN;
+    participants = remoteCfg.participants;
+    exclusions = Array.isArray(remoteCfg.exclusions) ? remoteCfg.exclusions : [];
+    saveSeed(remoteSeed);
+    saveLocalConfig({
+      groupName: currentGroupName,
+      groupSlug: currentGroupSlug,
+      pin: currentGroupPin,
+      participants,
+      exclusions,
+      seed: remoteSeed
+    });
+    assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
+    if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
+    return changed;
+  }
+
+  async function syncSeenFromServer(targetGroupSlug = currentGroupSlug) {
     try {
-      const res = await fetch(`/api/seen?seed=${encodeURIComponent(currentSeed)}&t=${Date.now()}`, {
-        cache: 'no-store'
-      });
+      const res = await fetch(
+        `/api/seen?group=${encodeURIComponent(targetGroupSlug)}&seed=${encodeURIComponent(currentSeed)}&t=${Date.now()}`,
+        { cache: 'no-store' }
+      );
       if (!res.ok) return seenUsersCache;
       const data = await res.json();
 
       let configChanged = false;
       if (data.config && Array.isArray(data.config.participants) && data.config.participants.length >= 2) {
-        const remoteCfg = data.config;
-        const remoteSeed = Number(remoteCfg.seed) || currentSeed;
-        const sameParticipants =
-          JSON.stringify(remoteCfg.participants) === JSON.stringify(participants);
-        const sameExclusions =
-          JSON.stringify(remoteCfg.exclusions || []) === JSON.stringify(exclusions);
-
-        if (remoteSeed !== currentSeed || !sameParticipants || !sameExclusions) {
-          participants = remoteCfg.participants;
-          exclusions = Array.isArray(remoteCfg.exclusions) ? remoteCfg.exclusions : [];
-          saveSeed(remoteSeed);
-          saveLocalConfig({ participants, exclusions, seed: remoteSeed });
-          assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
-          configChanged = true;
-        }
+        configChanged = applyRemoteConfig(data.config);
       }
 
       if (Array.isArray(data.seen)) {
@@ -250,7 +304,12 @@
       const res = await fetch('/api/seen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: currentSeed, action: 'mark', name })
+        body: JSON.stringify({
+          group: currentGroupSlug,
+          seed: currentSeed,
+          action: 'mark',
+          name
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -395,15 +454,70 @@
     pinErrorMsg.style.display = 'none';
   }
 
-  function verifyPin() {
-    if (VALID_PINS.includes(pinBuffer)) {
+  async function verifyPin() {
+    const typedGroup = (groupNameInput ? groupNameInput.value.trim() : '') || 'Familia';
+    const slug = normalizeGroupSlug(typedGroup);
+
+    // Consultar grupo en el servidor
+    let remoteConfig = null;
+    let remoteSeen = null;
+    try {
+      const res = await fetch(`/api/seen?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        remoteConfig = data.config || null;
+        if (Array.isArray(data.seen)) remoteSeen = data.seen;
+      }
+    } catch (_) {
+      // Fallback local si no hay conexión
+    }
+
+    let isAllowed = false;
+    if (remoteConfig) {
+      if (pinBuffer === String(remoteConfig.pin || '')) {
+        applyRemoteConfig(remoteConfig);
+        if (remoteSeen) saveLocalSeenUsers(remoteSeen);
+        isAllowed = true;
+      }
+    } else if (slug === 'familia' && VALID_PINS.includes(pinBuffer)) {
+      currentGroupSlug = 'familia';
+      currentGroupName = 'Familia';
+      currentGroupPin = DEFAULT_PIN;
+      const localCfg = loadLocalConfig('familia');
+      participants = localCfg.participants;
+      exclusions = localCfg.exclusions;
+      currentSeed = localCfg.seed || DEFAULT_SEED;
+      assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
+      if (remoteSeen) saveLocalSeenUsers(remoteSeen);
+      if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
+      isAllowed = true;
+    } else {
+      const localCfg = loadLocalConfig(slug);
+      if (localCfg && localCfg.groupSlug === slug && localCfg.pin === pinBuffer && slug !== 'familia') {
+        currentGroupSlug = slug;
+        currentGroupName = localCfg.groupName;
+        currentGroupPin = localCfg.pin;
+        participants = localCfg.participants;
+        exclusions = localCfg.exclusions;
+        currentSeed = localCfg.seed || DEFAULT_SEED;
+        assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
+        if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
+        isAllowed = true;
+      }
+    }
+
+    if (isAllowed) {
       playSuccessChime();
       renderParticipants();
       showScreen('names');
       resetPin();
     } else {
+      pinErrorMsg.textContent = remoteConfig
+        ? `🎅 PIN incorrecto para el grupo "${remoteConfig.groupName || typedGroup}".`
+        : `🎅 Grupo "${typedGroup}" o PIN incorrecto.`;
       pinErrorMsg.style.display = 'block';
-      // Re-disparar animación shake
       pinErrorMsg.style.animation = 'none';
       void pinErrorMsg.offsetWidth;
       pinErrorMsg.style.animation = '';
@@ -437,7 +551,7 @@
     if (!screens.pin.classList.contains('active') || adminModal.style.display !== 'none') {
       return;
     }
-    if (document.activeElement === pinInput) return;
+    if (document.activeElement === pinInput || document.activeElement === groupNameInput) return;
 
     if (/^[0-9]$/.test(e.key)) {
       appendPinDigit(e.key);
@@ -550,6 +664,8 @@
       adminAuthBody.style.display = 'none';
       adminContentBody.style.display = 'block';
       await syncSeenFromServer();
+      adminGroupNameInput.value = currentGroupName;
+      adminGroupPinInput.value = currentGroupPin;
       draftParticipants = participants.map((p) => ({ ...p }));
       draftExclusions = exclusions.map((e) => [...e]);
       adminConfigError.style.display = 'none';
@@ -560,6 +676,38 @@
       adminPinError.style.display = 'block';
       playErrorTone();
     }
+  }
+
+  async function loadAdminGroup() {
+    const rawName = adminGroupNameInput.value.trim();
+    if (!rawName) return;
+    const slug = normalizeGroupSlug(rawName);
+    adminConfigError.style.display = 'none';
+
+    try {
+      const res = await fetch(`/api/seen?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.config && Array.isArray(data.config.participants)) {
+          applyRemoteConfig(data.config);
+          if (Array.isArray(data.seen)) saveLocalSeenUsers(data.seen);
+          adminGroupNameInput.value = currentGroupName;
+          adminGroupPinInput.value = currentGroupPin;
+          draftParticipants = participants.map((p) => ({ ...p }));
+          draftExclusions = exclusions.map((e) => [...e]);
+          renderAdminConfig();
+          renderAdminMatrix();
+          showToast(`📂 Grupo "${currentGroupName}" cargado`);
+          return;
+        }
+      }
+    } catch (_) {
+      // Ignorar
+    }
+
+    showToast(`✨ "${rawName}" es un grupo nuevo: editá participantes y guardá`);
   }
 
   function renderAdminConfig() {
@@ -664,6 +812,19 @@
   }
 
   async function saveConfigAndDraw(customSeed) {
+    const rawGroupName = adminGroupNameInput.value.trim();
+    const rawGroupPin = adminGroupPinInput.value.replace(/\D/g, '').slice(0, 4);
+
+    if (!rawGroupName) {
+      adminConfigError.textContent = '⚠️ Ingresá un nombre para el grupo.';
+      adminConfigError.style.display = 'block';
+      return;
+    }
+    if (rawGroupPin.length !== 4) {
+      adminConfigError.textContent = '⚠️ El PIN del grupo debe tener 4 dígitos numéricos.';
+      adminConfigError.style.display = 'block';
+      return;
+    }
     if (draftParticipants.length < 2) {
       adminConfigError.textContent = '⚠️ Se necesitan al menos 2 participantes.';
       adminConfigError.style.display = 'block';
@@ -679,10 +840,23 @@
     }
 
     adminConfigError.style.display = 'none';
+    currentGroupName = rawGroupName;
+    currentGroupSlug = normalizeGroupSlug(rawGroupName);
+    currentGroupPin = rawGroupPin;
+    if (groupNameInput) groupNameInput.value = currentGroupName;
+    if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
+
     participants = draftParticipants.map((p) => ({ ...p }));
     exclusions = draftExclusions.map((e) => [...e]);
     saveSeed(newSeed);
-    const cfg = { participants, exclusions, seed: newSeed };
+    const cfg = {
+      groupName: currentGroupName,
+      groupSlug: currentGroupSlug,
+      pin: currentGroupPin,
+      participants,
+      exclusions,
+      seed: newSeed
+    };
     saveLocalConfig(cfg);
     saveLocalSeenUsers([]);
     assignments = nextAssignments;
@@ -691,7 +865,7 @@
       await fetch('/api/seen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save_config', config: cfg })
+        body: JSON.stringify({ group: currentGroupSlug, action: 'save_config', config: cfg })
       });
     } catch (_) {
       // Guardado localmente como respaldo
@@ -700,13 +874,12 @@
     renderParticipants();
     renderAdminMatrix();
     playFestiveJingle();
-    showToast(`💾 Sorteo guardado y actualizado (Semilla #${newSeed})`);
+    showToast(`💾 Grupo "${currentGroupName}" guardado (PIN: ${currentGroupPin})`);
   }
 
   function renderAdminMatrix() {
-    if (adminStatBanner) {
-      adminStatBanner.innerHTML = `🎄 Sorteo Activo: <strong>Semilla #${currentSeed}</strong>`;
-    }
+    if (adminBannerGroup) adminBannerGroup.textContent = currentGroupName;
+    if (adminBannerSeed) adminBannerSeed.textContent = currentSeed;
     adminPairsList.innerHTML = '';
     participants.forEach((p) => {
       const row = document.createElement('div');
@@ -723,12 +896,13 @@
   function copyWhatsAppLinks() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const lines = [
-      '🎄 *Sorteo de Navidad Familiar* 🎁',
-      'Tocá tu enlace personal para descubrir a quién te toca regalarle (¡sin que nadie espíe!):',
+      `🎄 *Sorteo de Navidad — Grupo: ${currentGroupName}* 🎁`,
+      `Ingresá con Grupo: *${currentGroupName}* | PIN: *${currentGroupPin}*`,
+      'O tocá tu enlace personal directo:',
       ''
     ];
     participants.forEach((p) => {
-      const link = `${baseUrl}?u=${encodeURIComponent(p.name)}&p=${VALID_PINS[0]}&s=${currentSeed}`;
+      const link = `${baseUrl}?g=${encodeURIComponent(currentGroupSlug)}&u=${encodeURIComponent(p.name)}&p=${currentGroupPin}&s=${currentSeed}`;
       lines.push(`• *${p.name}*: ${link}`);
     });
     const text = lines.join('\n');
@@ -766,7 +940,7 @@
       await fetch('/api/seen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: currentSeed, action: 'reset' })
+        body: JSON.stringify({ group: currentGroupSlug, seed: currentSeed, action: 'reset' })
       });
     } catch (_) {
       // Ignorar si no hay backend disponible
@@ -780,6 +954,8 @@
   }
 
   btnOpenAdmin.addEventListener('click', openAdminModal);
+  if (btnOpenAdminFromPin) btnOpenAdminFromPin.addEventListener('click', openAdminModal);
+  if (btnLoadGroup) btnLoadGroup.addEventListener('click', loadAdminGroup);
   btnCloseAdmin.addEventListener('click', closeAdminModal);
   adminModal.addEventListener('click', (e) => {
     if (e.target === adminModal) closeAdminModal();
@@ -978,14 +1154,20 @@
 
   window.addEventListener('resize', resizeCanvas);
 
-  // -------------------- AUTO-LOGIN POR URL (?u=Nombre&p=2512) --------------------
+  // -------------------- AUTO-LOGIN POR URL (?g=Grupo&u=Nombre&p=2512) --------------------
   async function checkDirectUrlAccess() {
-    await syncSeenFromServer();
+    if (groupNameInput) groupNameInput.value = currentGroupName;
+    if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
+
     const params = new URLSearchParams(window.location.search);
+    const groupParam = params.get('g');
     const userParam = params.get('u');
     const pinParam = params.get('p');
 
-    if (userParam && VALID_PINS.includes(pinParam)) {
+    const targetSlug = groupParam ? normalizeGroupSlug(groupParam) : currentGroupSlug;
+    await syncSeenFromServer(targetSlug);
+
+    if (userParam && (pinParam === currentGroupPin || VALID_PINS.includes(pinParam))) {
       const normalize = (str) =>
         str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
       const match = participants.find(

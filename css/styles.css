@@ -195,8 +195,33 @@ html, body {
 .pin-instruction {
   font-size: 0.92rem;
   color: #E2E8F0;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   line-height: 1.4;
+}
+
+.group-input-wrapper {
+  margin-bottom: 14px;
+}
+
+.group-input-wrapper input {
+  width: 100%;
+  max-width: 290px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 14px;
+  padding: 11px 16px;
+  color: var(--snow-white);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-input-wrapper input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
 }
 
 /* Display de Puntos del PIN */

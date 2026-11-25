@@ -1,17 +1,29 @@
 const { list, put, del } = require('@vercel/blob');
 
-function getSeenPrefix(seed) {
-  const cleanSeed = String(seed || '2512').replace(/[^0-9]/g, '') || '2512';
-  return `state/seen-${cleanSeed}/`;
+function normalizeGroupSlug(group) {
+  const clean = String(group || 'familia')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return clean || 'familia';
 }
 
-const CONFIG_PREFIX = 'state/config/';
+function getConfigPrefix(groupSlug) {
+  return `state/groups/${groupSlug}/config/`;
+}
+
+function getSeenPrefix(groupSlug, seed) {
+  const cleanSeed = String(seed || '2512').replace(/[^0-9]/g, '') || '2512';
+  return `state/groups/${groupSlug}/seen-${cleanSeed}/`;
+}
 
 async function readLatestJson(prefix, fallback) {
   const { blobs } = await list({ prefix, limit: 100 });
   if (!blobs || blobs.length === 0) return fallback;
 
-  // Ordenar por pathname descendente (contiene timestamp padded) para obtener siempre el más reciente
   const sorted = [...blobs].sort((a, b) => b.pathname.localeCompare(a.pathname));
   const latest = sorted[0];
 
@@ -32,7 +44,6 @@ async function writeVersionedJson(prefix, data) {
     cacheControlMaxAge: 0
   });
 
-  // Limpiar versiones viejas para mantener el store liviano
   try {
     const { blobs } = await list({ prefix, limit: 100 });
     const oldUrls = blobs
@@ -57,34 +68,40 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const config = await readLatestJson(CONFIG_PREFIX, null);
+      const groupSlug = normalizeGroupSlug(req.query.group);
+      const config = await readLatestJson(getConfigPrefix(groupSlug), null);
       const effectiveSeed = (config && config.seed) ? config.seed : req.query.seed;
-      const seenPrefix = getSeenPrefix(effectiveSeed);
+      const seenPrefix = getSeenPrefix(groupSlug, effectiveSeed);
       const seenRaw = await readLatestJson(seenPrefix, []);
       const seen = Array.isArray(seenRaw) ? seenRaw : [];
-      return res.status(200).json({ seen, config });
+      return res.status(200).json({ group: groupSlug, seen, config });
     }
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
       const action = body.action || 'mark';
+      const groupSlug = normalizeGroupSlug(body.group || (body.config && body.config.groupSlug) || (body.config && body.config.groupName));
 
       if (action === 'save_config') {
         const config = body.config;
         if (!config || !Array.isArray(config.participants) || config.participants.length < 2) {
           return res.status(400).json({ error: 'Se necesitan al menos 2 participantes' });
         }
-        await writeVersionedJson(CONFIG_PREFIX, config);
-        const seenPrefix = getSeenPrefix(config.seed);
+        const normalizedConfig = {
+          ...config,
+          groupSlug
+        };
+        await writeVersionedJson(getConfigPrefix(groupSlug), normalizedConfig);
+        const seenPrefix = getSeenPrefix(groupSlug, normalizedConfig.seed);
         await writeVersionedJson(seenPrefix, []);
-        return res.status(200).json({ ok: true, config, seen: [] });
+        return res.status(200).json({ ok: true, group: groupSlug, config: normalizedConfig, seen: [] });
       }
 
-      const seenPrefix = getSeenPrefix(body.seed);
+      const seenPrefix = getSeenPrefix(groupSlug, body.seed);
 
       if (action === 'reset') {
         await writeVersionedJson(seenPrefix, []);
-        return res.status(200).json({ seen: [] });
+        return res.status(200).json({ group: groupSlug, seen: [] });
       }
 
       const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -98,7 +115,7 @@ module.exports = async function handler(req, res) {
         seen.push(name);
         await writeVersionedJson(seenPrefix, seen);
       }
-      return res.status(200).json({ seen });
+      return res.status(200).json({ group: groupSlug, seen });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

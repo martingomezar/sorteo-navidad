@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=6">
+  <link rel="stylesheet" href="css/styles.css?v=7">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
 </head>
 <body>
@@ -42,7 +42,11 @@
         <h1 class="main-title">Sorteo de Navidad</h1>
         <p class="subtitle">Amigo Invisible de la Familia</p>
 
-        <p class="pin-instruction">Ingresá el PIN navideño para descubrir a quién te toca regalarle:</p>
+        <p class="pin-instruction">Ingresá el nombre de tu grupo y el PIN de 4 dígitos:</p>
+
+        <div class="group-input-wrapper">
+          <input type="text" id="groupNameInput" maxlength="32" value="Familia" placeholder="Nombre del grupo (ej: Familia)" autocomplete="off" aria-label="Nombre del grupo">
+        </div>
 
         <div class="pin-display-wrapper">
           <div class="pin-dots" id="pinDots">
@@ -75,7 +79,11 @@
         </div>
 
         <div class="pin-hint">
-          <span>Pista: Fecha de Navidad (2512)</span>
+          <span>Grupo por defecto: <strong>Familia</strong> · PIN: <strong>2512</strong></span>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <button type="button" class="btn-text btn-admin-trigger" id="btnOpenAdminFromPin">⚙️ Crear o Administrar Grupo</button>
         </div>
       </div>
     </section>
@@ -84,7 +92,7 @@
     <!-- ==================== PANTALLA 2: SELECCIÓN DE NOMBRE ==================== -->
     <section id="screenNames" class="screen">
       <div class="screen-header">
-        <div class="festive-mini-badge">🎄 ¿Quién está frente a la pantalla?</div>
+        <div class="festive-mini-badge">🎄 Grupo: <strong id="activeGroupBadge">Familia</strong></div>
         <h2 class="section-title">Elegí tu nombre</h2>
         <p class="privacy-notice">
           🤫 <strong>Regla de oro:</strong> Tocá únicamente tu nombre. Asegurate de que nadie espíe tu pantalla para no arruinar la sorpresa.
@@ -173,8 +181,20 @@
 
       <div class="modal-body" id="adminContentBody" style="display: none;">
         <div class="admin-stat-banner">
-          <span>🎄 Sorteo Activo: <strong>Semilla #2512</strong></span>
+          <span>🎄 Grupo: <strong id="adminBannerGroup">Familia</strong> · <strong>#<span id="adminBannerSeed">2512</span></strong></span>
           <span class="badge-valid">✓ Sin auto-regalos</span>
+        </div>
+
+        <!-- Configuración del Grupo -->
+        <div class="admin-section">
+          <h4 class="admin-section-title">🏷️ Grupo y PIN de acceso</h4>
+          <div class="admin-input-row">
+            <input type="text" id="adminGroupNameInput" maxlength="32" placeholder="Nombre del grupo (ej: Oficina)">
+            <button type="button" class="btn-festive-small" id="btnLoadGroup" title="Cargar si ya existe">Cargar</button>
+          </div>
+          <div class="admin-input-row" style="margin-bottom: 0;">
+            <input type="text" id="adminGroupPinInput" inputmode="numeric" maxlength="4" placeholder="PIN de 4 dígitos (ej: 1234)">
+          </div>
         </div>
 
         <!-- Gestión de Participantes -->
@@ -227,6 +247,6 @@
   </div>
 
   <!-- Sonido navideño sintetizado por Web Audio API -->
-  <script src="js/app.js?v=6"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>
