@@ -107,19 +107,25 @@ html, body {
 }
 
 .lang-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid transparent;
   border-radius: 50%;
   width: 30px;
   height: 30px;
-  font-size: 1.15rem;
+  color: #F8FAFC;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0.65;
+  opacity: 0.72;
   transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.lang-btn svg {
+  border-radius: 2px;
+  display: block;
 }
 
 .lang-btn:hover {
@@ -139,10 +145,10 @@ html, body {
   position: relative;
   z-index: 5;
   width: 100%;
-  max-width: 520px;
-  min-height: 100vh;
+  max-width: 500px;
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 36px 20px 40px;
+  padding: 26px 16px 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -155,9 +161,9 @@ html, body {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--glass-border);
-  border-radius: 28px;
+  border-radius: 26px;
   box-shadow: var(--shadow-festive);
-  padding: 32px 24px;
+  padding: 20px 22px;
   width: 100%;
   text-align: center;
   position: relative;
@@ -195,68 +201,68 @@ html, body {
 /* ==================== PANTALLA 1: PIN ==================== */
 .festive-badge {
   display: inline-block;
-  padding: 6px 14px;
+  padding: 4px 12px;
   border-radius: 20px;
   background: rgba(212, 175, 55, 0.15);
   border: 1px solid rgba(212, 175, 55, 0.4);
   color: var(--gold-glow);
-  font-size: 0.82rem;
-  letter-spacing: 1.5px;
+  font-size: 0.75rem;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
   font-weight: 600;
 }
 
 .hero-icon {
-  font-size: 3.4rem;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.5));
+  font-size: 2.3rem;
+  margin-bottom: 2px;
+  filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.5));
   animation: floatIcon 3s ease-in-out infinite;
 }
 
 @keyframes floatIcon {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-4px); }
 }
 
 .main-title {
   font-family: var(--font-heading);
-  font-size: 2.1rem;
+  font-size: 1.75rem;
   font-weight: 800;
   letter-spacing: 0.5px;
   background: linear-gradient(135deg, #FFF, var(--gold-glow));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .subtitle {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: #B4C6D8;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   font-weight: 400;
 }
 
 .pin-instruction {
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   color: #E2E8F0;
-  margin-bottom: 14px;
-  line-height: 1.4;
+  margin-bottom: 10px;
+  line-height: 1.35;
 }
 
 .group-input-wrapper {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .group-input-wrapper input {
   width: 100%;
-  max-width: 290px;
+  max-width: 260px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(212, 175, 55, 0.35);
-  border-radius: 14px;
-  padding: 11px 16px;
+  border-radius: 12px;
+  padding: 8px 14px;
   color: var(--snow-white);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   font-family: var(--font-sans);
   text-align: center;
@@ -275,13 +281,13 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .pin-dots {
   display: flex;
-  gap: 16px;
-  padding: 12px 24px;
+  gap: 14px;
+  padding: 9px 20px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 40px;
@@ -330,20 +336,20 @@ html, body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  max-width: 290px;
-  margin: 0 auto 16px;
+  max-width: 260px;
+  margin: 0 auto 8px;
 }
 
 .num-btn {
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--snow-white);
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  height: 60px;
-  border-radius: 16px;
+  height: 46px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1153,5 +1159,32 @@ html, body {
   }
   .assigned-name {
     font-size: 2.1rem;
+  }
+}
+
+/* Ajuste para pantallas bajas (laptops 1366x768 / 720p) sin scroll */
+@media (max-height: 700px) {
+  .app-container {
+    padding: 20px 14px 10px;
+  }
+  .glass-panel {
+    padding: 14px 18px;
+  }
+  .hero-icon {
+    font-size: 1.9rem;
+  }
+  .main-title {
+    font-size: 1.55rem;
+  }
+  .subtitle {
+    margin-bottom: 8px;
+  }
+  .num-btn {
+    height: 40px;
+    font-size: 1.15rem;
+  }
+  .numpad {
+    gap: 6px;
+    margin-bottom: 6px;
   }
 }
