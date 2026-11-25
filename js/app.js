@@ -16,6 +16,9 @@
   const STORAGE_LAST_GROUP_KEY = 'sorteo_navidad_last_group_v2';
   const STORAGE_CONFIG_PREFIX = 'sorteo_navidad_config_v2_';
   const STORAGE_SEEN_PREFIX = 'sorteo_navidad_seen_v2_';
+  const API_URL = window.location.hostname.includes('vercel.app')
+    ? '/api/seen'
+    : 'https://sorteo-navidad-six.vercel.app/api/seen';
   const AVATAR_POOL = ['🎅', '🤶', '🦌', '⭐', '🎄', '🕯️', '🧝', '⛄', '🎁', '🔔', '❄️', '🍪'];
 
   // Participantes y exclusiones por defecto (grupo Familia)
@@ -266,7 +269,7 @@
   async function syncSeenFromServer(targetGroupSlug = currentGroupSlug) {
     try {
       const res = await fetch(
-        `/api/seen?group=${encodeURIComponent(targetGroupSlug)}&seed=${encodeURIComponent(currentSeed)}&t=${Date.now()}`,
+        `${API_URL}?group=${encodeURIComponent(targetGroupSlug)}&seed=${encodeURIComponent(currentSeed)}&t=${Date.now()}`,
         { cache: 'no-store' }
       );
       if (!res.ok) return seenUsersCache;
@@ -301,7 +304,7 @@
       saveLocalSeenUsers([...seenUsersCache, name]);
     }
     try {
-      const res = await fetch('/api/seen', {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -462,7 +465,7 @@
     let remoteConfig = null;
     let remoteSeen = null;
     try {
-      const res = await fetch(`/api/seen?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
+      const res = await fetch(`${API_URL}?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
         cache: 'no-store'
       });
       if (res.ok) {
@@ -685,7 +688,7 @@
     adminConfigError.style.display = 'none';
 
     try {
-      const res = await fetch(`/api/seen?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
+      const res = await fetch(`${API_URL}?group=${encodeURIComponent(slug)}&t=${Date.now()}`, {
         cache: 'no-store'
       });
       if (res.ok) {
@@ -862,7 +865,7 @@
     assignments = nextAssignments;
 
     try {
-      await fetch('/api/seen', {
+      await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group: currentGroupSlug, action: 'save_config', config: cfg })
@@ -937,7 +940,7 @@
   async function resetSeenUsers() {
     saveLocalSeenUsers([]);
     try {
-      await fetch('/api/seen', {
+      await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group: currentGroupSlug, seed: currentSeed, action: 'reset' })
