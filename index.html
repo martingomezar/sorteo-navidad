@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=6">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
 </head>
 <body>
@@ -174,10 +174,38 @@
       <div class="modal-body" id="adminContentBody" style="display: none;">
         <div class="admin-stat-banner">
           <span>🎄 Sorteo Activo: <strong>Semilla #2512</strong></span>
-          <span class="badge-valid">✓ 100% Sin Parejas ni Auto-regalos</span>
+          <span class="badge-valid">✓ Sin auto-regalos</span>
         </div>
 
-        <p class="admin-notice">Matriz completa de asignaciones (solo visible para el organizador):</p>
+        <!-- Gestión de Participantes -->
+        <div class="admin-section">
+          <h4 class="admin-section-title">👥 Participantes (<span id="adminParticipantCount">7</span>)</h4>
+          <div class="admin-input-row">
+            <input type="text" id="newParticipantInput" maxlength="24" placeholder="Nombre nuevo...">
+            <button type="button" class="btn-festive-small" id="btnAddParticipant">+ Agregar</button>
+          </div>
+          <div class="admin-chips-list" id="adminParticipantsList"></div>
+        </div>
+
+        <!-- Gestión de Exclusiones -->
+        <div class="admin-section">
+          <h4 class="admin-section-title">🚫 No se regalan entre sí</h4>
+          <p class="admin-helper-text">Nadie puede autoregalarse (siempre activo). Marcá quiénes no deben cruzarse:</p>
+          <div class="admin-exclusion-row">
+            <select id="exclSelectA" aria-label="Primera persona"></select>
+            <span class="excl-vs">↔</span>
+            <select id="exclSelectB" aria-label="Segunda persona"></select>
+            <button type="button" class="btn-festive-small" id="btnAddExclusion">+</button>
+          </div>
+          <div class="admin-chips-list" id="adminExclusionsList"></div>
+          <div id="adminConfigError" class="error-msg" style="display: none; margin-top: 8px;"></div>
+        </div>
+
+        <button type="button" class="btn-admin-save" id="btnSaveAndDraw">
+          💾 Guardar Cambios y Sortear
+        </button>
+
+        <p class="admin-notice" style="margin-top: 14px;">Matriz completa de asignaciones (solo visible para el organizador):</p>
 
         <div class="admin-pairs-list" id="adminPairsList">
           <!-- Lista completa generada en JS -->
@@ -199,6 +227,6 @@
   </div>
 
   <!-- Sonido navideño sintetizado por Web Audio API -->
-  <script src="js/app.js?v=5"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

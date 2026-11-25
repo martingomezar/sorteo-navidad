@@ -13,27 +13,40 @@
   const ADMIN_PINS = ['9999', '2512'];
   const DEFAULT_SEED = 2512;
   const STORAGE_SEED_KEY = 'sorteo_navidad_seed_v1';
+  const STORAGE_CONFIG_KEY = 'sorteo_navidad_config_v1';
   const STORAGE_SEEN_PREFIX = 'sorteo_navidad_seen_v1_';
+  const AVATAR_POOL = ['🎅', '🤶', '🦌', '⭐', '🎄', '🕯️', '🧝', '⛄', '🎁', '🔔', '❄️', '🍪'];
 
-  // Participantes y sus parejas (no pueden regalarse entre sí ni a sí mismos)
-  const PARTICIPANTS = [
-    { name: 'Martin',  partner: 'Valeria', avatar: '🎅' },
-    { name: 'Valeria', partner: 'Martin',  avatar: '🤶' },
-    { name: 'Marcelo', partner: 'Julieta', avatar: '🦌' },
-    { name: 'Julieta', partner: 'Marcelo', avatar: '⭐' },
-    { name: 'Marina',  partner: null,      avatar: '🎄' },
-    { name: 'Alicia',  partner: 'Jorge',   avatar: '🕯️' },
-    { name: 'Jorge',   partner: 'Alicia',  avatar: '🧝' }
+  // Participantes y exclusiones por defecto (nunca auto-regalos)
+  const DEFAULT_PARTICIPANTS = [
+    { name: 'Martin',  avatar: '🎅' },
+    { name: 'Valeria', avatar: '🤶' },
+    { name: 'Marcelo', avatar: '🦌' },
+    { name: 'Julieta', avatar: '⭐' },
+    { name: 'Marina',  avatar: '🎄' },
+    { name: 'Alicia',  avatar: '🕯️' },
+    { name: 'Jorge',   avatar: '🧝' }
+  ];
+
+  const DEFAULT_EXCLUSIONS = [
+    ['Martin', 'Valeria'],
+    ['Marcelo', 'Julieta'],
+    ['Alicia', 'Jorge']
   ];
 
   // -------------------- ESTADO DE LA APLICACIÓN --------------------
-  let currentSeed = loadInitialSeed();
-  let assignments = generateValidDraw(currentSeed);
+  const initialConfig = loadLocalConfig();
+  let participants = initialConfig.participants;
+  let exclusions = initialConfig.exclusions;
+  let currentSeed = loadInitialSeed(initialConfig.seed);
+  let assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
   let seenUsersCache = loadLocalSeenUsers();
   let seenPollTimer = null;
   let pinBuffer = '';
   let selectedUser = null;
   let isOpeningGift = false;
+  let draftParticipants = [];
+  let draftExclusions = [];
 
   // -------------------- ELEMENTOS DEL DOM --------------------
   const screens = {
@@ -77,6 +90,16 @@
   const btnShareWhatsApp = document.getElementById('btnShareWhatsApp');
   const btnResetSeen = document.getElementById('btnResetSeen');
   const btnReshuffle = document.getElementById('btnReshuffle');
+  const adminParticipantCount = document.getElementById('adminParticipantCount');
+  const newParticipantInput = document.getElementById('newParticipantInput');
+  const btnAddParticipant = document.getElementById('btnAddParticipant');
+  const adminParticipantsList = document.getElementById('adminParticipantsList');
+  const exclSelectA = document.getElementById('exclSelectA');
+  const exclSelectB = document.getElementById('exclSelectB');
+  const btnAddExclusion = document.getElementById('btnAddExclusion');
+  const adminExclusionsList = document.getElementById('adminExclusionsList');
+  const adminConfigError = document.getElementById('adminConfigError');
+  const btnSaveAndDraw = document.getElementById('btnSaveAndDraw');
 
   // -------------------- PRNG DETERMINISTA Y ALGORITMO DE SORTEO --------------------
   function mulberry32(seed) {
@@ -90,11 +113,45 @@
     };
   }
 
-  function loadInitialSeed() {
+  function loadLocalConfig() {
+    try {
+      const raw = localStorage.getItem(STORAGE_CONFIG_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.participants) && parsed.participants.length >= 2) {
+          return {
+            participants: parsed.participants,
+            exclusions: Array.isArray(parsed.exclusions) ? parsed.exclusions : [],
+            seed: parsed.seed || DEFAULT_SEED
+          };
+        }
+      }
+    } catch (_) {
+      // Ignorar si localStorage no está disponible
+    }
+    return {
+      participants: DEFAULT_PARTICIPANTS.map((p) => ({ ...p })),
+      exclusions: DEFAULT_EXCLUSIONS.map((e) => [...e]),
+      seed: DEFAULT_SEED
+    };
+  }
+
+  function saveLocalConfig(cfg) {
+    try {
+      localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(cfg));
+    } catch (_) {
+      // Ignorar si localStorage no está disponible
+    }
+  }
+
+  function loadInitialSeed(configSeed) {
     const params = new URLSearchParams(window.location.search);
     const urlSeed = parseInt(params.get('s'), 10);
     if (!Number.isNaN(urlSeed) && urlSeed > 0) {
       return urlSeed;
+    }
+    if (configSeed && !Number.isNaN(Number(configSeed))) {
+      return Number(configSeed);
     }
     try {
       const saved = parseInt(localStorage.getItem(STORAGE_SEED_KEY), 10);
@@ -146,15 +203,37 @@
       });
       if (!res.ok) return seenUsersCache;
       const data = await res.json();
+
+      let configChanged = false;
+      if (data.config && Array.isArray(data.config.participants) && data.config.participants.length >= 2) {
+        const remoteCfg = data.config;
+        const remoteSeed = Number(remoteCfg.seed) || currentSeed;
+        const sameParticipants =
+          JSON.stringify(remoteCfg.participants) === JSON.stringify(participants);
+        const sameExclusions =
+          JSON.stringify(remoteCfg.exclusions || []) === JSON.stringify(exclusions);
+
+        if (remoteSeed !== currentSeed || !sameParticipants || !sameExclusions) {
+          participants = remoteCfg.participants;
+          exclusions = Array.isArray(remoteCfg.exclusions) ? remoteCfg.exclusions : [];
+          saveSeed(remoteSeed);
+          saveLocalConfig({ participants, exclusions, seed: remoteSeed });
+          assignments = generateValidDraw(currentSeed, participants, exclusions) || {};
+          configChanged = true;
+        }
+      }
+
       if (Array.isArray(data.seen)) {
         const merged = Array.from(new Set(data.seen));
-        const changed =
+        const seenChanged =
           merged.length !== seenUsersCache.length ||
           merged.some((u, idx) => u !== seenUsersCache[idx]);
         saveLocalSeenUsers(merged);
-        if (changed && screens.names.classList.contains('active')) {
+        if ((seenChanged || configChanged) && screens.names.classList.contains('active')) {
           renderParticipants();
         }
+      } else if (configChanged && screens.names.classList.contains('active')) {
+        renderParticipants();
       }
     } catch (_) {
       // Fallback silencioso a localStorage si no hay backend disponible
@@ -185,20 +264,29 @@
   }
 
   /**
-   * Genera un sorteo válido usando la semilla dada.
+   * Genera un sorteo válido usando la semilla dada, lista de participantes y exclusiones.
    * Garantiza:
    * 1. Todos regalan a exactamente 1 persona y todos reciben exactamente 1 regalo.
-   * 2. Nadie se regala a sí mismo.
-   * 3. Ninguna pareja se regala entre sí.
+   * 2. Nadie se regala a sí mismo (siempre activo).
+   * 3. Ningún par excluido se regala entre sí.
+   * Devuelve null si las restricciones hacen imposible el sorteo.
    */
-  function generateValidDraw(seed) {
-    const rng = mulberry32(seed);
-    const givers = PARTICIPANTS.map((p) => p.name);
-    const partnerMap = Object.fromEntries(PARTICIPANTS.map((p) => [p.name, p.partner]));
+  function isPairExcluded(giver, receiver, exclusionsList) {
+    if (giver === receiver) return true;
+    return exclusionsList.some(
+      ([a, b]) => (giver === a && receiver === b) || (giver === b && receiver === a)
+    );
+  }
 
-    for (let attempt = 0; attempt < 5000; attempt++) {
+  function generateValidDraw(seed, participantsList = participants, exclusionsList = exclusions) {
+    const givers = participantsList.map((p) => p.name);
+    if (givers.length < 2) return null;
+
+    const rng = mulberry32(seed);
+
+    // Intento rápido por shuffle determinista
+    for (let attempt = 0; attempt < 1500; attempt++) {
       const receivers = [...givers];
-      // Fisher-Yates shuffle determinista
       for (let i = receivers.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         [receivers[i], receivers[j]] = [receivers[j], receivers[i]];
@@ -206,9 +294,7 @@
 
       let valid = true;
       for (let i = 0; i < givers.length; i++) {
-        const giver = givers[i];
-        const receiver = receivers[i];
-        if (giver === receiver || partnerMap[giver] === receiver) {
+        if (isPairExcluded(givers[i], receivers[i], exclusionsList)) {
           valid = false;
           break;
         }
@@ -223,16 +309,36 @@
       }
     }
 
-    // Fallback determinista garantizado (ciclo único válido de 7 participantes)
-    return {
-      Alicia: 'Marcelo',
-      Marcelo: 'Marina',
-      Marina: 'Valeria',
-      Valeria: 'Julieta',
-      Julieta: 'Martin',
-      Martin: 'Jorge',
-      Jorge: 'Alicia'
-    };
+    // Respaldo exacto con backtracking determinista para restricciones muy ajustadas
+    const orderedGivers = [...givers].sort((a, b) => {
+      const allowedA = givers.filter((r) => !isPairExcluded(a, r, exclusionsList)).length;
+      const allowedB = givers.filter((r) => !isPairExcluded(b, r, exclusionsList)).length;
+      return allowedA - allowedB;
+    });
+
+    const used = new Set();
+    const result = {};
+
+    function backtrack(idx) {
+      if (idx === orderedGivers.length) return true;
+      const giver = orderedGivers[idx];
+      const candidates = givers.filter(
+        (r) => !used.has(r) && !isPairExcluded(giver, r, exclusionsList)
+      );
+      for (let i = candidates.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+      for (const candidate of candidates) {
+        used.add(candidate);
+        result[giver] = candidate;
+        if (backtrack(idx + 1)) return true;
+        used.delete(candidate);
+      }
+      return false;
+    }
+
+    return backtrack(0) ? result : null;
   }
 
   // -------------------- NAVEGACIÓN ENTRE PANTALLAS --------------------
@@ -346,7 +452,7 @@
   function renderParticipants() {
     const seenUsers = getSeenUsers();
     participantsGrid.innerHTML = '';
-    PARTICIPANTS.forEach((person) => {
+    participants.forEach((person) => {
       const isSeen = seenUsers.includes(person.name);
       const card = document.createElement('button');
       card.type = 'button';
@@ -437,12 +543,17 @@
     adminModal.style.display = 'none';
   }
 
-  function verifyAdmin() {
+  async function verifyAdmin() {
     const val = adminPinInput.value.trim();
     if (ADMIN_PINS.includes(val)) {
       adminPinError.style.display = 'none';
       adminAuthBody.style.display = 'none';
       adminContentBody.style.display = 'block';
+      await syncSeenFromServer();
+      draftParticipants = participants.map((p) => ({ ...p }));
+      draftExclusions = exclusions.map((e) => [...e]);
+      adminConfigError.style.display = 'none';
+      renderAdminConfig();
       renderAdminMatrix();
       playSuccessChime();
     } else {
@@ -451,18 +562,159 @@
     }
   }
 
+  function renderAdminConfig() {
+    adminParticipantCount.textContent = draftParticipants.length;
+    adminParticipantsList.innerHTML = '';
+    draftParticipants.forEach((p, idx) => {
+      const chip = document.createElement('span');
+      chip.className = 'admin-chip';
+      chip.innerHTML = `${p.avatar} ${p.name} <button type="button" class="chip-remove" title="Quitar a ${p.name}" aria-label="Quitar a ${p.name}">&times;</button>`;
+      chip.querySelector('.chip-remove').addEventListener('click', () => removeDraftParticipant(idx));
+      adminParticipantsList.appendChild(chip);
+    });
+
+    // Poblar selects de exclusión
+    const prevA = exclSelectA.value;
+    const prevB = exclSelectB.value;
+    exclSelectA.innerHTML = '';
+    exclSelectB.innerHTML = '';
+    draftParticipants.forEach((p) => {
+      const optA = document.createElement('option');
+      optA.value = p.name;
+      optA.textContent = p.name;
+      exclSelectA.appendChild(optA);
+
+      const optB = document.createElement('option');
+      optB.value = p.name;
+      optB.textContent = p.name;
+      exclSelectB.appendChild(optB);
+    });
+    if (draftParticipants.some((p) => p.name === prevA)) exclSelectA.value = prevA;
+    if (draftParticipants.some((p) => p.name === prevB)) {
+      exclSelectB.value = prevB;
+    } else if (draftParticipants.length > 1) {
+      exclSelectB.selectedIndex = 1;
+    }
+
+    adminExclusionsList.innerHTML = '';
+    if (draftExclusions.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'admin-helper-text';
+      empty.textContent = 'Sin restricciones adicionales (solo se evita el auto-regalo).';
+      adminExclusionsList.appendChild(empty);
+    } else {
+      draftExclusions.forEach(([a, b], idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'admin-chip excl-chip';
+        chip.innerHTML = `${a} ↔ ${b} <button type="button" class="chip-remove" title="Quitar restricción">&times;</button>`;
+        chip.querySelector('.chip-remove').addEventListener('click', () => {
+          draftExclusions.splice(idx, 1);
+          adminConfigError.style.display = 'none';
+          renderAdminConfig();
+        });
+        adminExclusionsList.appendChild(chip);
+      });
+    }
+  }
+
+  function addDraftParticipant() {
+    const raw = newParticipantInput.value.trim();
+    if (!raw) return;
+    const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (draftParticipants.some((p) => norm(p.name) === norm(raw))) {
+      adminConfigError.textContent = `⚠️ "${raw}" ya está en la lista.`;
+      adminConfigError.style.display = 'block';
+      return;
+    }
+    const avatar = AVATAR_POOL[draftParticipants.length % AVATAR_POOL.length];
+    draftParticipants.push({ name: raw, avatar });
+    newParticipantInput.value = '';
+    adminConfigError.style.display = 'none';
+    renderAdminConfig();
+  }
+
+  function removeDraftParticipant(idx) {
+    if (draftParticipants.length <= 2) {
+      adminConfigError.textContent = '⚠️ Debe haber al menos 2 participantes.';
+      adminConfigError.style.display = 'block';
+      return;
+    }
+    const removed = draftParticipants[idx].name;
+    draftParticipants.splice(idx, 1);
+    draftExclusions = draftExclusions.filter(([a, b]) => a !== removed && b !== removed);
+    adminConfigError.style.display = 'none';
+    renderAdminConfig();
+  }
+
+  function addDraftExclusion() {
+    const a = exclSelectA.value;
+    const b = exclSelectB.value;
+    if (!a || !b || a === b) {
+      adminConfigError.textContent = '⚠️ Elegí dos personas distintas (el auto-regalo ya está bloqueado).';
+      adminConfigError.style.display = 'block';
+      return;
+    }
+    const exists = draftExclusions.some(
+      ([x, y]) => (x === a && y === b) || (x === b && y === a)
+    );
+    if (exists) return;
+    draftExclusions.push([a, b]);
+    adminConfigError.style.display = 'none';
+    renderAdminConfig();
+  }
+
+  async function saveConfigAndDraw(customSeed) {
+    if (draftParticipants.length < 2) {
+      adminConfigError.textContent = '⚠️ Se necesitan al menos 2 participantes.';
+      adminConfigError.style.display = 'block';
+      return;
+    }
+    const newSeed = customSeed || Math.floor(1000 + Math.random() * 9000);
+    const nextAssignments = generateValidDraw(newSeed, draftParticipants, draftExclusions);
+    if (!nextAssignments) {
+      adminConfigError.textContent = '⚠️ Con esas exclusiones es imposible sortear sin que alguien quede afuera o se autoregale. Quitá alguna restricción.';
+      adminConfigError.style.display = 'block';
+      playErrorTone();
+      return;
+    }
+
+    adminConfigError.style.display = 'none';
+    participants = draftParticipants.map((p) => ({ ...p }));
+    exclusions = draftExclusions.map((e) => [...e]);
+    saveSeed(newSeed);
+    const cfg = { participants, exclusions, seed: newSeed };
+    saveLocalConfig(cfg);
+    saveLocalSeenUsers([]);
+    assignments = nextAssignments;
+
+    try {
+      await fetch('/api/seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save_config', config: cfg })
+      });
+    } catch (_) {
+      // Guardado localmente como respaldo
+    }
+
+    renderParticipants();
+    renderAdminMatrix();
+    playFestiveJingle();
+    showToast(`💾 Sorteo guardado y actualizado (Semilla #${newSeed})`);
+  }
+
   function renderAdminMatrix() {
     if (adminStatBanner) {
       adminStatBanner.innerHTML = `🎄 Sorteo Activo: <strong>Semilla #${currentSeed}</strong>`;
     }
     adminPairsList.innerHTML = '';
-    PARTICIPANTS.forEach((p) => {
+    participants.forEach((p) => {
       const row = document.createElement('div');
       row.className = 'admin-pair-row';
       row.innerHTML = `
         <span class="admin-pair-giver">${p.avatar} ${p.name}</span>
         <span class="admin-pair-arrow">🎁 ➔</span>
-        <span class="admin-pair-receiver">${assignments[p.name]}</span>
+        <span class="admin-pair-receiver">${assignments[p.name] || '—'}</span>
       `;
       adminPairsList.appendChild(row);
     });
@@ -475,7 +727,7 @@
       'Tocá tu enlace personal para descubrir a quién te toca regalarle (¡sin que nadie espíe!):',
       ''
     ];
-    PARTICIPANTS.forEach((p) => {
+    participants.forEach((p) => {
       const link = `${baseUrl}?u=${encodeURIComponent(p.name)}&p=${VALID_PINS[0]}&s=${currentSeed}`;
       lines.push(`• *${p.name}*: ${link}`);
     });
@@ -524,14 +776,7 @@
   }
 
   function reshuffleDraw() {
-    const newSeed = Math.floor(1000 + Math.random() * 9000);
-    saveSeed(newSeed);
-    seenUsersCache = loadLocalSeenUsers();
-    assignments = generateValidDraw(newSeed);
-    renderParticipants();
-    renderAdminMatrix();
-    playFestiveJingle();
-    showToast(`🎲 Nuevo sorteo generado (Semilla #${newSeed})`);
+    saveConfigAndDraw();
   }
 
   btnOpenAdmin.addEventListener('click', openAdminModal);
@@ -543,6 +788,15 @@
   adminPinInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') verifyAdmin();
   });
+  btnAddParticipant.addEventListener('click', addDraftParticipant);
+  newParticipantInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addDraftParticipant();
+    }
+  });
+  btnAddExclusion.addEventListener('click', addDraftExclusion);
+  btnSaveAndDraw.addEventListener('click', () => saveConfigAndDraw());
   btnShareWhatsApp.addEventListener('click', copyWhatsAppLinks);
   if (btnResetSeen) btnResetSeen.addEventListener('click', resetSeenUsers);
   btnReshuffle.addEventListener('click', reshuffleDraw);
@@ -725,7 +979,8 @@
   window.addEventListener('resize', resizeCanvas);
 
   // -------------------- AUTO-LOGIN POR URL (?u=Nombre&p=2512) --------------------
-  function checkDirectUrlAccess() {
+  async function checkDirectUrlAccess() {
+    await syncSeenFromServer();
     const params = new URLSearchParams(window.location.search);
     const userParam = params.get('u');
     const pinParam = params.get('p');
@@ -733,7 +988,7 @@
     if (userParam && VALID_PINS.includes(pinParam)) {
       const normalize = (str) =>
         str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-      const match = PARTICIPANTS.find(
+      const match = participants.find(
         (p) => normalize(p.name) === normalize(userParam)
       );
       if (match) {

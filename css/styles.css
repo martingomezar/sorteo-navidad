@@ -866,6 +866,121 @@ html, body {
   background: rgba(220, 38, 38, 0.3);
 }
 
+/* Secciones de configuración en Admin */
+.admin-section {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-section-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--gold-glow);
+  margin-bottom: 8px;
+}
+
+.admin-helper-text {
+  font-size: 0.78rem;
+  color: #94A3B8;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+.admin-input-row,
+.admin-exclusion-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-input-row input,
+.admin-exclusion-row select {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #FFF;
+  font-size: 0.88rem;
+  font-family: var(--font-sans);
+}
+
+.admin-input-row .btn-festive-small,
+.admin-exclusion-row .btn-festive-small {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.excl-vs {
+  color: var(--accent-gold);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.admin-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #F1F5F9;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.admin-chip.excl-chip {
+  background: rgba(196, 30, 58, 0.22);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: #FCA5A5;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.chip-remove:hover {
+  color: #FFF;
+}
+
+.btn-admin-save {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent-gold), #B8860B);
+  color: #0B1320;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.btn-admin-save:active {
+  transform: scale(0.98);
+}
+
 /* Toast flotante */
 .toast {
   position: fixed;
