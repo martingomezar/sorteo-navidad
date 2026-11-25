@@ -1054,6 +1054,14 @@ html, body {
   font-family: var(--font-sans);
 }
 
+.request-status-msg {
+  margin-top: 10px;
+  font-size: 0.84rem;
+  color: #68D391;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 /* Toast flotante */
 .toast {
   position: fixed;

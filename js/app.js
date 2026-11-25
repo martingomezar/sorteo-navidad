@@ -122,6 +122,8 @@
   const requestEmailInput = document.getElementById('requestEmailInput');
   const requestGroupInput = document.getElementById('requestGroupInput');
   const btnRequestAdminMail = document.getElementById('btnRequestAdminMail');
+  const requestStatusMsg = document.getElementById('requestStatusMsg');
+  const adminRequestsList = document.getElementById('adminRequestsList');
   const adminPairsList = document.getElementById('adminPairsList');
   const adminBannerGroup = document.getElementById('adminBannerGroup');
   const adminBannerSeed = document.getElementById('adminBannerSeed');
@@ -677,6 +679,7 @@
       adminConfigError.style.display = 'none';
       renderAdminConfig();
       renderAdminMatrix();
+      loadAdminRequests(val);
       playSuccessChime();
     } else {
       adminPinError.style.display = 'block';
@@ -959,18 +962,77 @@
     saveConfigAndDraw();
   }
 
-  function sendAdminRequestMail() {
+  async function loadAdminRequests(adminPin) {
+    if (!adminRequestsList) return;
+    adminRequestsList.innerHTML = '<span class="admin-helper-text">Cargando solicitudes...</span>';
+    try {
+      const res = await fetch(
+        `${API_URL}?action=list_requests&adminPin=${encodeURIComponent(adminPin)}&t=${Date.now()}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) {
+        adminRequestsList.innerHTML = '<span class="admin-helper-text">No se pudieron cargar las solicitudes.</span>';
+        return;
+      }
+      const data = await res.json();
+      const list = Array.isArray(data.requests) ? data.requests : [];
+      if (list.length === 0) {
+        adminRequestsList.innerHTML = '<span class="admin-helper-text">Todavía no hay solicitudes nuevas.</span>';
+        return;
+      }
+      adminRequestsList.innerHTML = '';
+      list.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'admin-pair-row';
+        row.innerHTML = `
+          <div style="overflow:hidden; text-overflow:ellipsis;">
+            <strong style="color:#FCE28A;">${item.group || 'Sin grupo'}</strong><br>
+            <span style="font-size:0.78rem; color:#CBD5E1;">${item.email || ''}</span>
+          </div>
+          <button type="button" class="btn-festive-small" style="padding:4px 10px; font-size:0.78rem;">Usar</button>
+        `;
+        row.querySelector('button').addEventListener('click', () => {
+          adminGroupNameInput.value = item.group || '';
+          adminGroupPinInput.value = String(Math.floor(1000 + Math.random() * 9000));
+          showToast(`✏️ Grupo "${item.group}" listo para configurar`);
+        });
+        adminRequestsList.appendChild(row);
+      });
+    } catch (_) {
+      adminRequestsList.innerHTML = '<span class="admin-helper-text">Error al cargar solicitudes.</span>';
+    }
+  }
+
+  async function sendAdminRequestMail() {
     const email = (requestEmailInput ? requestEmailInput.value.trim() : '') || '';
     const group = (requestGroupInput ? requestGroupInput.value.trim() : '') || '';
     if (!email || !group) {
       showToast('⚠️ Completá tu email y el nombre de tu grupo o familia');
       return;
     }
-    const subject = encodeURIComponent(`Solicitud clave Sorteo de Navidad - ${group}`);
-    const body = encodeURIComponent(
-      `Hola Martín,\n\nQuiero usar la app de Sorteo de Navidad.\n\n• Mi mail: ${email}\n• Nombre del grupo/familia: ${group}\n\n¡Gracias!`
-    );
-    window.location.href = `mailto:martin.adrian.gomez@outlook.com?subject=${subject}&body=${body}`;
+    if (btnRequestAdminMail) btnRequestAdminMail.disabled = true;
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request_access', email, group })
+      });
+      if (res.ok) {
+        if (requestEmailInput) requestEmailInput.value = '';
+        if (requestGroupInput) requestGroupInput.value = '';
+        if (requestStatusMsg) {
+          requestStatusMsg.textContent = '✅ ¡Solicitud enviada! Te enviaremos por mail la clave y contraseña de tu grupo.';
+          requestStatusMsg.style.display = 'block';
+        }
+        showToast('📩 ¡Solicitud enviada!');
+      } else {
+        showToast('⚠️ No se pudo enviar la solicitud. Intentá de nuevo.');
+      }
+    } catch (_) {
+      showToast('⚠️ Error de conexión al enviar la solicitud.');
+    } finally {
+      if (btnRequestAdminMail) btnRequestAdminMail.disabled = false;
+    }
   }
 
   btnOpenAdmin.addEventListener('click', openAdminModal);
@@ -1177,13 +1239,15 @@
 
   // -------------------- AUTO-LOGIN POR URL (?g=Grupo&u=Nombre&p=2512) --------------------
   async function checkDirectUrlAccess() {
-    if (groupNameInput) groupNameInput.value = currentGroupName;
-    if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
-
     const params = new URLSearchParams(window.location.search);
     const groupParam = params.get('g');
     const userParam = params.get('u');
     const pinParam = params.get('p');
+
+    if (groupNameInput && groupParam) {
+      groupNameInput.value = groupParam.trim();
+    }
+    if (activeGroupBadge) activeGroupBadge.textContent = currentGroupName;
 
     const targetSlug = groupParam ? normalizeGroupSlug(groupParam) : currentGroupSlug;
     await syncSeenFromServer(targetSlug);

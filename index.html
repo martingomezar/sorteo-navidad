@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=9">
+  <link rel="stylesheet" href="css/styles.css?v=10">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎄</text></svg>">
 </head>
 <body>
@@ -45,7 +45,7 @@
         <p class="pin-instruction">Ingresá el nombre de tu grupo y el PIN de 4 dígitos:</p>
 
         <div class="group-input-wrapper">
-          <input type="text" id="groupNameInput" maxlength="32" value="Familia" placeholder="Nombre del grupo (ej: Familia)" autocomplete="off" aria-label="Nombre del grupo">
+          <input type="text" id="groupNameInput" maxlength="32" placeholder="Nombre del grupo" autocomplete="off" aria-label="Nombre del grupo">
         </div>
 
         <div class="pin-display-wrapper">
@@ -76,10 +76,6 @@
           <button type="button" class="num-btn num-action" id="btnClearPin" title="Borrar">⌫</button>
           <button type="button" class="num-btn" data-val="0">0</button>
           <button type="button" class="num-btn num-action enter-btn" id="btnSubmitPin" title="Entrar">✓</button>
-        </div>
-
-        <div class="pin-hint">
-          <span>Grupo por defecto: <strong>Familia</strong> · PIN: <strong>2512</strong></span>
         </div>
 
         <div style="margin-top: 12px;">
@@ -181,15 +177,14 @@
         <div class="admin-request-box">
           <p class="admin-request-title">🎄 ¿Querés usar la app para tu sorteo de Navidad?</p>
           <p class="admin-request-text">
-            Pedime la clave de administrador enviando un mail a
-            <a href="mailto:martin.adrian.gomez@outlook.com?subject=Solicitud%20clave%20Sorteo%20de%20Navidad" class="admin-mail-link">martin.adrian.gomez@outlook.com</a>
-            con tu dirección de mail y el nombre de tu grupo o familia, y te paso por mail la clave y contraseña de tu grupo:
+            <strong>El uso es 100% gratuito.</strong> Completá este formulario con tu dirección de mail y el nombre de tu grupo o familia, y te enviamos por mail la clave y contraseña de tu grupo:
           </p>
           <div class="admin-request-form">
             <input type="email" id="requestEmailInput" placeholder="Tu dirección de mail">
             <input type="text" id="requestGroupInput" maxlength="32" placeholder="Nombre de tu grupo / familia">
-            <button type="button" class="btn-admin-action" id="btnRequestAdminMail">✉️ Enviar mail</button>
+            <button type="button" class="btn-admin-action" id="btnRequestAdminMail">📩 Enviar solicitud</button>
           </div>
+          <div id="requestStatusMsg" class="request-status-msg" style="display: none;"></div>
         </div>
       </div>
 
@@ -256,11 +251,16 @@
             🎲 Sortear de Nuevo (Cambiar Asignaciones)
           </button>
         </div>
+
+        <div class="admin-section" style="margin-top: 14px; margin-bottom: 0;">
+          <h4 class="admin-section-title">📩 Solicitudes de nuevos grupos</h4>
+          <div id="adminRequestsList" class="admin-pairs-list" style="max-height: 150px; margin-bottom: 0;"></div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Sonido navideño sintetizado por Web Audio API -->
-  <script src="js/app.js?v=9"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>

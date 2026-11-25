@@ -11,6 +11,10 @@ function normalizeGroupSlug(group) {
   return clean || 'familia';
 }
 
+const CONFIG_PREFIX = 'state/groups/';
+const REQUESTS_PREFIX = 'state/requests/';
+const ADMIN_PIN = '2904';
+
 function getConfigPrefix(groupSlug) {
   return `state/groups/${groupSlug}/config/`;
 }
@@ -75,6 +79,24 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      if (req.query.action === 'list_requests') {
+        if (req.query.adminPin !== ADMIN_PIN) {
+          return res.status(403).json({ error: 'Unauthorized' });
+        }
+        const { blobs } = await list({ prefix: REQUESTS_PREFIX, limit: 50 });
+        const sorted = [...(blobs || [])].sort((a, b) => b.pathname.localeCompare(a.pathname));
+        const requests = [];
+        for (const b of sorted.slice(0, 20)) {
+          try {
+            const r = await fetch(b.url, { cache: 'no-store' });
+            if (r.ok) requests.push(await r.json());
+          } catch (_) {
+            // Ignorar
+          }
+        }
+        return res.status(200).json({ requests });
+      }
+
       const groupSlug = normalizeGroupSlug(req.query.group);
       const config = await readLatestJson(getConfigPrefix(groupSlug), null);
       const effectiveSeed = (config && config.seed) ? config.seed : req.query.seed;
@@ -87,6 +109,23 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
       const action = body.action || 'mark';
+
+      if (action === 'request_access') {
+        const email = typeof body.email === 'string' ? body.email.trim() : '';
+        const group = typeof body.group === 'string' ? body.group.trim() : '';
+        if (!email || !group) {
+          return res.status(400).json({ error: 'Faltan datos' });
+        }
+        const stamp = String(Date.now()).padStart(15, '0');
+        const rand = Math.random().toString(36).slice(2, 8);
+        await put(
+          `${REQUESTS_PREFIX}${stamp}-${rand}.json`,
+          JSON.stringify({ email, group, createdAt: new Date().toISOString() }),
+          { access: 'public', addRandomSuffix: false, contentType: 'application/json' }
+        );
+        return res.status(200).json({ ok: true });
+      }
+
       const groupSlug = normalizeGroupSlug(body.group || (body.config && body.config.groupSlug) || (body.config && body.config.groupName));
 
       if (action === 'save_config') {
