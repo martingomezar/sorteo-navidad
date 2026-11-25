@@ -29,6 +29,8 @@
   // -------------------- ESTADO DE LA APLICACIÓN --------------------
   let currentSeed = loadInitialSeed();
   let assignments = generateValidDraw(currentSeed);
+  let seenUsersCache = loadLocalSeenUsers();
+  let seenPollTimer = null;
   let pinBuffer = '';
   let selectedUser = null;
   let isOpeningGift = false;
@@ -114,7 +116,7 @@
     }
   }
 
-  function getSeenUsers() {
+  function loadLocalSeenUsers() {
     try {
       const raw = localStorage.getItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`);
       const parsed = raw ? JSON.parse(raw) : [];
@@ -124,16 +126,61 @@
     }
   }
 
-  function markUserAsSeen(name) {
-    if (!name) return;
-    const seen = getSeenUsers();
-    if (!seen.includes(name)) {
-      seen.push(name);
-      try {
-        localStorage.setItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`, JSON.stringify(seen));
-      } catch (_) {
-        // Ignorar si localStorage no está disponible
+  function saveLocalSeenUsers(list) {
+    seenUsersCache = Array.isArray(list) ? list : [];
+    try {
+      localStorage.setItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`, JSON.stringify(seenUsersCache));
+    } catch (_) {
+      // Ignorar si localStorage no está disponible
+    }
+  }
+
+  function getSeenUsers() {
+    return seenUsersCache;
+  }
+
+  async function syncSeenFromServer() {
+    try {
+      const res = await fetch(`/api/seen?seed=${encodeURIComponent(currentSeed)}&t=${Date.now()}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return seenUsersCache;
+      const data = await res.json();
+      if (Array.isArray(data.seen)) {
+        const merged = Array.from(new Set(data.seen));
+        const changed =
+          merged.length !== seenUsersCache.length ||
+          merged.some((u, idx) => u !== seenUsersCache[idx]);
+        saveLocalSeenUsers(merged);
+        if (changed && screens.names.classList.contains('active')) {
+          renderParticipants();
+        }
       }
+    } catch (_) {
+      // Fallback silencioso a localStorage si no hay backend disponible
+    }
+    return seenUsersCache;
+  }
+
+  async function markUserAsSeen(name) {
+    if (!name) return;
+    if (!seenUsersCache.includes(name)) {
+      saveLocalSeenUsers([...seenUsersCache, name]);
+    }
+    try {
+      const res = await fetch('/api/seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed: currentSeed, action: 'mark', name })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.seen)) {
+          saveLocalSeenUsers(data.seen);
+        }
+      }
+    } catch (_) {
+      // Ya quedó guardado en localStorage como respaldo
     }
   }
 
@@ -197,6 +244,12 @@
         el.classList.remove('active');
       }
     });
+
+    clearInterval(seenPollTimer);
+    if (name === 'names') {
+      syncSeenFromServer();
+      seenPollTimer = setInterval(syncSeenFromServer, 4000);
+    }
   }
 
   // -------------------- PANTALLA 1: LÓGICA DEL PIN --------------------
@@ -311,8 +364,10 @@
     });
   }
 
-  function selectParticipant(name) {
+  async function selectParticipant(name) {
+    await syncSeenFromServer();
     if (getSeenUsers().includes(name)) {
+      renderParticipants();
       showToast(`🔒 ${name} ya descubrió a quién le regala`);
       return;
     }
@@ -453,19 +508,25 @@
     document.body.removeChild(ta);
   }
 
-  function resetSeenUsers() {
+  async function resetSeenUsers() {
+    saveLocalSeenUsers([]);
     try {
-      localStorage.removeItem(`${STORAGE_SEEN_PREFIX}${currentSeed}`);
+      await fetch('/api/seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed: currentSeed, action: 'reset' })
+      });
     } catch (_) {
-      // Ignorar si localStorage no está disponible
+      // Ignorar si no hay backend disponible
     }
     renderParticipants();
-    showToast('🔄 Nombres tachados reiniciados');
+    showToast('🔄 Nombres tachados reiniciados para todos');
   }
 
   function reshuffleDraw() {
     const newSeed = Math.floor(1000 + Math.random() * 9000);
     saveSeed(newSeed);
+    seenUsersCache = loadLocalSeenUsers();
     assignments = generateValidDraw(newSeed);
     renderParticipants();
     renderAdminMatrix();
