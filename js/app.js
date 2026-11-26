@@ -97,7 +97,6 @@
   const btnClearPin = document.getElementById('btnClearPin');
   const btnSubmitPin = document.getElementById('btnSubmitPin');
   const btnOpenAdminFromPin = document.getElementById('btnOpenAdminFromPin');
-  const btnTopAdmin = document.getElementById('btnTopAdmin');
 
   // Pantalla 2: Nombres
   const activeGroupBadge = document.getElementById('activeGroupBadge');
@@ -1040,7 +1039,6 @@
 
   btnOpenAdmin.addEventListener('click', openAdminModal);
   if (btnOpenAdminFromPin) btnOpenAdminFromPin.addEventListener('click', openAdminModal);
-  if (btnTopAdmin) btnTopAdmin.addEventListener('click', openAdminModal);
   if (btnRequestAdminMail) btnRequestAdminMail.addEventListener('click', sendAdminRequestMail);
   if (btnLoadGroup) btnLoadGroup.addEventListener('click', loadAdminGroup);
   btnCloseAdmin.addEventListener('click', closeAdminModal);
