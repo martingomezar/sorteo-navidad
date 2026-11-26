@@ -89,6 +89,36 @@ html, body {
   100% { opacity: 1; transform: scale(1.1); }
 }
 
+/* Botón Admin Arriba a la Izquierda */
+.top-admin-btn {
+  position: fixed;
+  top: 28px;
+  left: 16px;
+  z-index: 50;
+  height: 44px;
+  padding: 0 12px;
+  background: rgba(14, 25, 44, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 24px;
+  color: var(--gold-glow);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.top-admin-btn:hover {
+  border-color: var(--accent-gold);
+  transform: scale(1.04);
+}
+
 /* Selector de Idioma Arriba a la Derecha */
 .lang-switcher {
   position: fixed;
@@ -1140,15 +1170,51 @@ html, body {
 
 /* Responsive Móvil */
 @media (max-width: 480px) {
+  .top-admin-btn {
+    top: 24px;
+    left: 10px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+  .lang-switcher {
+    top: 24px;
+    right: 10px;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  .lang-btn {
+    width: 26px;
+    height: 26px;
+  }
   .app-container {
-    padding: 24px 14px 30px;
+    padding: 66px 12px 12px;
   }
   .glass-panel {
-    padding: 24px 16px;
+    padding: 14px 14px;
     border-radius: 22px;
   }
+  .hero-icon {
+    font-size: 1.9rem;
+  }
   .main-title {
-    font-size: 1.85rem;
+    font-size: 1.55rem;
+  }
+  .subtitle {
+    font-size: 0.88rem;
+    margin-bottom: 8px;
+  }
+  .pin-instruction {
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+  }
+  .numpad {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .num-btn {
+    height: 42px;
+    font-size: 1.2rem;
   }
   .participants-grid {
     grid-template-columns: repeat(2, 1fr);
